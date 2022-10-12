@@ -12,6 +12,7 @@
   "dependencies": {
     "@prisma/client": "4.4.0",
     "dayjs": "^1.11.5",
+    "dotenv": "^16.0.3",
     "ethers": "^5.7.1",
     "p-limit": "^3.0.2",
     "prisma": "^4.4.0",
