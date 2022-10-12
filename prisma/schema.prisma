@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Schema {
+  id          String        @id
+  schemaData  String
+  schema      String
+  creator     String
+  resolver    String
+  index       Int
+  txid        String
+  time        Int
+  Attestation Attestation[]
+}
+
+model Attestation {
+  id             String  @id
+  data           String
+  schema         Schema  @relation(fields: [schemaId], references: [id])
+  recipient      String
+  attester       String
+  time           Int
+  expirationTime String
+  revocationTime String
+  refUUID        String
+  revoked        Boolean
+  txid           String
+  schemaId       String
+}
+
+model ServiceStat {
+    name String @id
+    value String
+}
