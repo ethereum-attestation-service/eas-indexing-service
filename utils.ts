@@ -116,8 +116,9 @@ export async function getAndUpdateLatestAttestations() {
     });
   } else {
     if (lastBlock !== 0) {
-      await prisma.serviceStat.create({
-        data: { name: serviceStatPropertyName, value: lastBlock.toString() },
+      await prisma.serviceStat.update({
+        where: { name: serviceStatPropertyName },
+        data: { value: lastBlock.toString() },
       });
     }
   }
@@ -166,8 +167,9 @@ export async function getAndUpdateLatestSchemas() {
     });
   } else {
     if (lastBlock !== 0) {
-      await prisma.serviceStat.create({
-        data: { name: serviceStatPropertyName, value: lastBlock.toString() },
+      await prisma.serviceStat.update({
+        where: { name: serviceStatPropertyName },
+        data: { value: lastBlock.toString() },
       });
     }
   }
