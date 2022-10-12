@@ -7,17 +7,25 @@ import {
   provider,
 } from "./utils";
 
+let running = false;
+
 export async function go() {
+  if (running) {
+    return;
+  }
+
   try {
+    running = true;
     await getAndUpdateLatestSchemas();
     await getAndUpdateLatestAttestations();
   } catch (e) {
     console.log("Error!", e);
   }
-
-  provider.on("block", () => {
-    go();
-  });
+  running = false;
 }
 
 go();
+
+provider.on("block", () => {
+  go();
+});
