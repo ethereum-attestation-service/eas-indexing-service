@@ -51,7 +51,7 @@ export async function getFormattedAttestationFromLog(
     expirationTime,
     time: time,
     txid: log.transactionHash,
-    revoked: revocationTime < dayjs().unix(),
+    revoked: revocationTime < dayjs().unix() && revocationTime !== 0,
   };
 }
 
