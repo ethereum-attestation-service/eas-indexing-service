@@ -4,6 +4,7 @@ import {
   delay,
   getAndUpdateLatestAttestations,
   getAndUpdateLatestSchemas,
+  provider,
 } from "./utils";
 
 export async function go() {
@@ -14,8 +15,9 @@ export async function go() {
     console.log("Error!", e);
   }
 
-  await delay(2000);
-  go();
+  provider.on("block", () => {
+    go();
+  });
 }
 
 go();

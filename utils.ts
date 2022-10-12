@@ -12,7 +12,7 @@ const EASContractAddress = "0x4a9Db81755c2F5bC47DdcDC716f0CF5B38252538"; // Goer
 const EASSchemaRegistryAddress = "0x2177e8D1D1ED5e044dEE53C5cEB3bC4a8f4B25A2"; // Goerli
 const CONTRACT_START_BLOCK = 7741696;
 
-const provider = new ethers.providers.InfuraProvider(
+export const provider = new ethers.providers.InfuraProvider(
   "goerli",
   process.env["INFURA_API_KEY"]
 );
