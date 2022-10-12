@@ -14,7 +14,7 @@ export async function go() {
     console.log("Error!", e);
   }
 
-  await delay(10000);
+  await delay(2000);
   go();
 }
 
