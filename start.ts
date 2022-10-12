@@ -5,8 +5,13 @@ import {
 } from "./utils";
 
 export async function go() {
-  await getAndUpdateLatestSchemas();
-  await getAndUpdateLatestAttestations();
+  try {
+    await getAndUpdateLatestSchemas();
+    await getAndUpdateLatestAttestations();
+  } catch (e) {
+    console.log("Error!", e);
+  }
+
   await delay(10000);
   go();
 }
