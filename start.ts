@@ -22,10 +22,13 @@ export async function go() {
     console.log("Error!", e);
   }
   running = false;
+
+  setTimeout(go, 2000);
 }
 
 go();
-
-provider.on("block", () => {
-  go();
-});
+//
+// provider.on("block", () => {
+//
+//   go();
+// });
