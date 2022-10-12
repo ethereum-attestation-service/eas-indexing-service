@@ -47,9 +47,9 @@ export async function getFormattedAttestationFromLog(
     attester,
     recipient,
     refUUID,
-    revocationTime,
-    expirationTime,
-    time: time,
+    revocationTime: revocationTime.toString(),
+    expirationTime: expirationTime.toString(),
+    time: time.toString(),
     txid: log.transactionHash,
     revoked: revocationTime < dayjs().unix() && revocationTime !== 0,
   };
@@ -70,9 +70,9 @@ export async function getFormattedSchemaFromLog(
     schema: ethers.utils.toUtf8String(schema),
     schemaData: schema,
     creator: tx.from,
-    index: index.toNumber(),
+    index: index.toString(),
     resolver,
-    time: BigInt(block.timestamp),
+    time: block.timestamp.toString(),
     txid: log.transactionHash,
   };
 }

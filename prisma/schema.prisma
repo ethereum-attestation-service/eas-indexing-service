@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -16,9 +16,9 @@ model Schema {
   schema      String
   creator     String
   resolver    String
-  index       BigInt
+  index       String
   txid        String
-  time        BigInt
+  time        String
   Attestation Attestation[]
 }
 
@@ -28,9 +28,9 @@ model Attestation {
   schema         Schema  @relation(fields: [schemaId], references: [id])
   recipient      String
   attester       String
-  time           BigInt
-  expirationTime BigInt
-  revocationTime BigInt
+  time           String
+  expirationTime String
+  revocationTime String
   refUUID        String
   revoked        Boolean
   txid           String
