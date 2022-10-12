@@ -16,9 +16,9 @@ model Schema {
   schema      String
   creator     String
   resolver    String
-  index       Int
+  index       BigInt
   txid        String
-  time        Int
+  time        BigInt
   Attestation Attestation[]
 }
 
@@ -28,9 +28,9 @@ model Attestation {
   schema         Schema  @relation(fields: [schemaId], references: [id])
   recipient      String
   attester       String
-  time           Int
-  expirationTime String
-  revocationTime String
+  time           BigInt
+  expirationTime BigInt
+  revocationTime BigInt
   refUUID        String
   revoked        Boolean
   txid           String
@@ -38,6 +38,6 @@ model Attestation {
 }
 
 model ServiceStat {
-    name String @id
-    value String
+  name  String @id
+  value String
 }
