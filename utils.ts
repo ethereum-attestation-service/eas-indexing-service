@@ -77,6 +77,56 @@ export async function getFormattedSchemaFromLog(
   };
 }
 
+export async function getAndUpdateLatestAttestationRevocations() {
+  const serviceStatPropertyName = "latestAttestationRevocationBlockNum";
+
+  const latestAttestationRevocationBlockNum =
+    await prisma.serviceStat.findFirst({
+      where: { name: serviceStatPropertyName },
+    });
+
+  let fromBlock: number = CONTRACT_START_BLOCK;
+
+  if (latestAttestationRevocationBlockNum?.value) {
+    fromBlock = Number(latestAttestationRevocationBlockNum.value);
+  }
+
+  console.log(`Attestation revocation update starting from block ${fromBlock}`);
+
+  const logs = await provider.getLogs({
+    address: EASContractAddress,
+    fromBlock: fromBlock + 1,
+    topics: [ethers.utils.id("Revoked(address,address,bytes32,bytes32)")],
+  });
+
+  const promises = logs.map((log) =>
+    limit(() => getFormattedAttestationFromLog(log))
+  );
+
+  const attestations = await Promise.all(promises);
+
+  for (let attestation of attestations) {
+    await prisma.attestation.create({ data: attestation });
+  }
+
+  const lastBlock = logs.length ? logs[logs.length - 1].blockNumber : 0;
+
+  if (!latestAttestationRevocationBlockNum) {
+    await prisma.serviceStat.create({
+      data: { name: serviceStatPropertyName, value: lastBlock.toString() },
+    });
+  } else {
+    if (lastBlock !== 0) {
+      await prisma.serviceStat.update({
+        where: { name: serviceStatPropertyName },
+        data: { value: lastBlock.toString() },
+      });
+    }
+  }
+
+  console.log(`New Attestation Revocations: ${logs.length}`);
+}
+
 export async function getAndUpdateLatestAttestations() {
   const serviceStatPropertyName = "latestAttestationBlockNum";
 

@@ -1,7 +1,7 @@
 require("dotenv").config();
 
 import {
-  delay,
+  getAndUpdateLatestAttestationRevocations,
   getAndUpdateLatestAttestations,
   getAndUpdateLatestSchemas,
   provider,
@@ -9,7 +9,7 @@ import {
 
 let running = false;
 
-export async function go() {
+export async function update() {
   if (running) {
     return;
   }
@@ -18,17 +18,19 @@ export async function go() {
     running = true;
     await getAndUpdateLatestSchemas();
     await getAndUpdateLatestAttestations();
+    await getAndUpdateLatestAttestationRevocations();
   } catch (e) {
     console.log("Error!", e);
   }
   running = false;
+}
 
-  setTimeout(go, 2000);
+async function go() {
+  await update();
+
+  provider.on("block", () => {
+    setTimeout(update, 500);
+  });
 }
 
 go();
-//
-// provider.on("block", () => {
-//
-//   go();
-// });
