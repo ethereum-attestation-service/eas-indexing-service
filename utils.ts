@@ -8,9 +8,15 @@ import { easAbi } from "./abis/easAbi";
 
 const limit = pLimit(5);
 
-const EASContractAddress = "0x4a9Db81755c2F5bC47DdcDC716f0CF5B38252538"; // Goerli
-const EASSchemaRegistryAddress = "0x2177e8D1D1ED5e044dEE53C5cEB3bC4a8f4B25A2"; // Goerli
-const CONTRACT_START_BLOCK = 7741696;
+export const EASContractAddress = "0x4a9Db81755c2F5bC47DdcDC716f0CF5B38252538"; // Goerli
+export const EASSchemaRegistryAddress =
+  "0x2177e8D1D1ED5e044dEE53C5cEB3bC4a8f4B25A2"; // Goerli
+export const CONTRACT_START_BLOCK = 7741696;
+export const revokedEventSignature = "Revoked(address,address,bytes32,bytes32)";
+export const attestedEventSignature =
+  "Attested(address,address,bytes32,bytes32)";
+export const registeredEventSignature =
+  "Registered(bytes32,uint256,bytes,address,address)";
 
 export const provider = new ethers.providers.InfuraProvider(
   "goerli",
@@ -23,7 +29,7 @@ const schemaContract = new ethers.Contract(
   provider
 );
 
-const eastContract = new ethers.Contract(EASContractAddress, easAbi, provider);
+const easContract = new ethers.Contract(EASContractAddress, easAbi, provider);
 
 export async function getFormattedAttestationFromLog(
   log: ethers.providers.Log
@@ -38,7 +44,7 @@ export async function getFormattedAttestationFromLog(
     recipient,
     attester,
     data,
-  ] = await eastContract.getAttestation(log.data);
+  ] = await easContract.getAttestation(log.data);
 
   return {
     id: UUID,
@@ -77,128 +83,13 @@ export async function getFormattedSchemaFromLog(
   };
 }
 
-export async function getAndUpdateLatestAttestationRevocations() {
-  const serviceStatPropertyName = "latestAttestationRevocationBlockNum";
-
-  const latestAttestationRevocationBlockNum =
-    await prisma.serviceStat.findFirst({
-      where: { name: serviceStatPropertyName },
-    });
-
-  let fromBlock: number = CONTRACT_START_BLOCK;
-
-  if (latestAttestationRevocationBlockNum?.value) {
-    fromBlock = Number(latestAttestationRevocationBlockNum.value);
+export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
+  for (let log of logs) {
+    await easContract.revoke(log.data);
   }
-
-  console.log(`Attestation revocation update starting from block ${fromBlock}`);
-
-  const logs = await provider.getLogs({
-    address: EASContractAddress,
-    fromBlock: fromBlock + 1,
-    topics: [ethers.utils.id("Revoked(address,address,bytes32,bytes32)")],
-  });
-
-  const promises = logs.map((log) =>
-    limit(() => getFormattedAttestationFromLog(log))
-  );
-
-  const attestations = await Promise.all(promises);
-
-  for (let attestation of attestations) {
-    await prisma.attestation.create({ data: attestation });
-  }
-
-  const lastBlock = logs.length ? logs[logs.length - 1].blockNumber : 0;
-
-  if (!latestAttestationRevocationBlockNum) {
-    await prisma.serviceStat.create({
-      data: { name: serviceStatPropertyName, value: lastBlock.toString() },
-    });
-  } else {
-    if (lastBlock !== 0) {
-      await prisma.serviceStat.update({
-        where: { name: serviceStatPropertyName },
-        data: { value: lastBlock.toString() },
-      });
-    }
-  }
-
-  console.log(`New Attestation Revocations: ${logs.length}`);
 }
 
-export async function getAndUpdateLatestAttestations() {
-  const serviceStatPropertyName = "latestAttestationBlockNum";
-
-  const latestAttestationBlockNum = await prisma.serviceStat.findFirst({
-    where: { name: serviceStatPropertyName },
-  });
-
-  let fromBlock: number = CONTRACT_START_BLOCK;
-
-  if (latestAttestationBlockNum?.value) {
-    fromBlock = Number(latestAttestationBlockNum.value);
-  }
-
-  console.log(`Attestation update starting from block ${fromBlock}`);
-
-  const logs = await provider.getLogs({
-    address: EASContractAddress,
-    fromBlock: fromBlock + 1,
-    topics: [ethers.utils.id("Attested(address,address,bytes32,bytes32)")],
-  });
-
-  const promises = logs.map((log) =>
-    limit(() => getFormattedAttestationFromLog(log))
-  );
-
-  const attestations = await Promise.all(promises);
-
-  for (let attestation of attestations) {
-    await prisma.attestation.create({ data: attestation });
-  }
-
-  const lastBlock = logs.length ? logs[logs.length - 1].blockNumber : 0;
-
-  if (!latestAttestationBlockNum) {
-    await prisma.serviceStat.create({
-      data: { name: serviceStatPropertyName, value: lastBlock.toString() },
-    });
-  } else {
-    if (lastBlock !== 0) {
-      await prisma.serviceStat.update({
-        where: { name: serviceStatPropertyName },
-        data: { value: lastBlock.toString() },
-      });
-    }
-  }
-
-  console.log(`New Attestations: ${logs.length}`);
-}
-
-export async function getAndUpdateLatestSchemas() {
-  const serviceStatPropertyName = "latestSchemaBlockNum";
-
-  const latestSchemaBlockNum = await prisma.serviceStat.findFirst({
-    where: { name: serviceStatPropertyName },
-  });
-
-  let fromBlock: number = CONTRACT_START_BLOCK;
-
-  if (latestSchemaBlockNum?.value) {
-    fromBlock = Number(latestSchemaBlockNum.value);
-  }
-
-  console.log(`Schema update starting from block ${fromBlock}`);
-
-  const logs = await provider.getLogs({
-    address: EASSchemaRegistryAddress,
-    fromBlock: fromBlock + 1,
-    topics: [
-      ethers.utils.id("Registered(bytes32,uint256,bytes,address,address)"),
-    ],
-  });
-
+export async function createSchemasFromLogs(logs: ethers.providers.Log[]) {
   const promises = logs.map((log) =>
     limit(() => getFormattedSchemaFromLog(log))
   );
@@ -206,12 +97,58 @@ export async function getAndUpdateLatestSchemas() {
   const schemas = await Promise.all(promises);
 
   for (let schema of schemas) {
+    console.log("Creating new schema", schema);
     await prisma.schema.create({ data: schema });
   }
+}
 
-  const lastBlock = logs.length ? logs[logs.length - 1].blockNumber : 0;
+export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
+  const promises = logs.map((log) =>
+    limit(() => getFormattedAttestationFromLog(log))
+  );
 
-  if (!latestSchemaBlockNum) {
+  const attestations = await Promise.all(promises);
+
+  for (let attestation of attestations) {
+    console.log("Creating new attestation", attestation);
+    await prisma.attestation.create({ data: attestation });
+  }
+}
+
+export async function getAndUpdateLatestAttestationRevocations() {
+  const serviceStatPropertyName = "latestAttestationRevocationBlockNum";
+
+  const { latestBlockNumServiceStat, fromBlock } = await getStartData(
+    serviceStatPropertyName
+  );
+
+  console.log(`Attestation revocation update starting from block ${fromBlock}`);
+
+  const logs = await provider.getLogs({
+    address: EASContractAddress,
+    fromBlock: fromBlock + 1,
+    topics: [ethers.utils.id(revokedEventSignature)],
+  });
+
+  await revokeAttestationsFromLogs(logs);
+
+  const lastBlock = getLastBlockNumberFromLog(logs);
+
+  await updateServiceStatToLastBlock(
+    !latestBlockNumServiceStat,
+    serviceStatPropertyName,
+    lastBlock
+  );
+
+  console.log(`New Attestation Revocations: ${logs.length}`);
+}
+
+export async function updateServiceStatToLastBlock(
+  shouldCreate: boolean,
+  serviceStatPropertyName: string,
+  lastBlock: number
+) {
+  if (shouldCreate) {
     await prisma.serviceStat.create({
       data: { name: serviceStatPropertyName, value: lastBlock.toString() },
     });
@@ -223,10 +160,110 @@ export async function getAndUpdateLatestSchemas() {
       });
     }
   }
+}
+
+export async function getAndUpdateLatestAttestations() {
+  const serviceStatPropertyName = "latestAttestationBlockNum";
+
+  const { latestBlockNumServiceStat, fromBlock } = await getStartData(
+    serviceStatPropertyName
+  );
+
+  console.log(`Attestation update starting from block ${fromBlock}`);
+
+  const logs = await provider.getLogs({
+    address: EASContractAddress,
+    fromBlock: fromBlock + 1,
+    topics: [ethers.utils.id(attestedEventSignature)],
+  });
+
+  await createAttestationsForLogs(logs);
+
+  const lastBlock = getLastBlockNumberFromLog(logs);
+
+  await updateServiceStatToLastBlock(
+    !latestBlockNumServiceStat,
+    serviceStatPropertyName,
+    lastBlock
+  );
+
+  console.log(`New Attestations: ${logs.length}`);
+}
+
+async function getStartData(serviceStatPropertyName: string) {
+  const latestBlockNumServiceStat = await prisma.serviceStat.findFirst({
+    where: { name: serviceStatPropertyName },
+  });
+
+  let fromBlock: number = CONTRACT_START_BLOCK;
+
+  if (latestBlockNumServiceStat?.value) {
+    fromBlock = Number(latestBlockNumServiceStat.value);
+  }
+  return { latestBlockNumServiceStat, fromBlock };
+}
+
+export function getLastBlockNumberFromLog(logs: ethers.providers.Log[]) {
+  return logs.length ? logs[logs.length - 1].blockNumber : 0;
+}
+
+export async function getAndUpdateLatestSchemas() {
+  const serviceStatPropertyName = "latestSchemaBlockNum";
+
+  const { latestBlockNumServiceStat, fromBlock } = await getStartData(
+    serviceStatPropertyName
+  );
+
+  console.log(`Schema update starting from block ${fromBlock}`);
+
+  const logs = await provider.getLogs({
+    address: EASSchemaRegistryAddress,
+    fromBlock: fromBlock + 1,
+    topics: [ethers.utils.id(registeredEventSignature)],
+  });
+
+  await createSchemasFromLogs(logs);
+
+  const lastBlock = getLastBlockNumberFromLog(logs);
+
+  await updateServiceStatToLastBlock(
+    !latestBlockNumServiceStat,
+    serviceStatPropertyName,
+    lastBlock
+  );
 
   console.log(`New schemas: ${logs.length}`);
 }
 
 export async function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function updateDbFromRelevantLog(log: ethers.providers.Log) {
+  if (log.address === EASSchemaRegistryAddress) {
+    if (log.topics[0] === ethers.utils.id(registeredEventSignature)) {
+      await createSchemasFromLogs([log]);
+      await updateServiceStatToLastBlock(
+        false,
+        "latestSchemaBlockNum",
+        log.blockNumber
+      );
+    }
+  } else if (log.address === EASContractAddress) {
+    if (log.topics[0] === ethers.utils.id(attestedEventSignature)) {
+      await createAttestationsForLogs([log]);
+      await updateServiceStatToLastBlock(
+        false,
+        "latestAttestationBlockNum",
+        log.blockNumber
+      );
+    } else if (log.topics[0] === ethers.utils.id(revokedEventSignature)) {
+      await revokeAttestationsFromLogs([log]);
+      await updateServiceStatToLastBlock(
+        false,
+        "latestRevocationBlockNum",
+        log.blockNumber
+      );
+    }
+  }
 }

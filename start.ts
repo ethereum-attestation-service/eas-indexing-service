@@ -1,11 +1,16 @@
-require("dotenv").config();
-
+import { ethers } from "ethers";
 import {
+  attestedEventSignature,
   getAndUpdateLatestAttestationRevocations,
   getAndUpdateLatestAttestations,
   getAndUpdateLatestSchemas,
   provider,
+  registeredEventSignature,
+  revokedEventSignature,
+  updateDbFromRelevantLog,
 } from "./utils";
+
+require("dotenv").config();
 
 let running = false;
 
@@ -28,8 +33,18 @@ export async function update() {
 async function go() {
   await update();
 
-  provider.on("block", () => {
-    setTimeout(update, 500);
+  const filter = {
+    topics: [
+      [
+        ethers.utils.id(registeredEventSignature),
+        ethers.utils.id(attestedEventSignature),
+        ethers.utils.id(revokedEventSignature),
+      ],
+    ],
+  };
+
+  provider.on(filter, async (log: ethers.providers.Log) => {
+    await updateDbFromRelevantLog(log);
   });
 }
 
