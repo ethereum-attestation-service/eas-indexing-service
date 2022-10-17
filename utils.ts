@@ -62,21 +62,19 @@ export async function getFormattedAttestationFromLog(
 
 export async function getFormattedSchemaFromLog(
   log: ethers.providers.Log
-): Promise<Schema> {
+): Promise<Omit<Schema, "index">> {
   const [UUID, resolver, schema] = await schemaContract.getSchema(
     log.topics[1]
   );
 
   const block = await provider.getBlock(log.blockNumber);
   const tx = await provider.getTransaction(log.transactionHash);
-  const schemaCount = await prisma.schema.count();
 
   return {
     id: UUID,
     schema: schema,
     schemaData: schema,
     creator: tx.from,
-    index: (schemaCount + 1).toString(),
     resolver,
     time: block.timestamp.toString(),
     txid: log.transactionHash,
@@ -97,8 +95,12 @@ export async function createSchemasFromLogs(logs: ethers.providers.Log[]) {
   const schemas = await Promise.all(promises);
 
   for (let schema of schemas) {
+    const schemaCount = await prisma.schema.count();
+
     console.log("Creating new schema", schema);
-    await prisma.schema.create({ data: schema });
+    await prisma.schema.create({
+      data: { ...schema, index: (schemaCount + 1).toString() },
+    });
   }
 }
 
