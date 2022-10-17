@@ -1,5 +1,5 @@
 import { prisma } from "./db.server";
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { Attestation, Schema } from "@prisma/client";
 import dayjs from "dayjs";
 import pLimit from "p-limit";
@@ -8,15 +8,14 @@ import { easAbi } from "./abis/easAbi";
 
 const limit = pLimit(5);
 
-export const EASContractAddress = "0x4a9Db81755c2F5bC47DdcDC716f0CF5B38252538"; // Goerli
+export const EASContractAddress = "0x6e195B51493e56d59768f8a87230ADe73BD4FC86"; // Goerli
 export const EASSchemaRegistryAddress =
-  "0x2177e8D1D1ED5e044dEE53C5cEB3bC4a8f4B25A2"; // Goerli
+  "0xB6652C033728658e1413F36cce9cA7f7eEbd5872"; // Goerli
 export const CONTRACT_START_BLOCK = 7741696;
 export const revokedEventSignature = "Revoked(address,address,bytes32,bytes32)";
 export const attestedEventSignature =
   "Attested(address,address,bytes32,bytes32)";
-export const registeredEventSignature =
-  "Registered(bytes32,uint256,bytes,address,address)";
+export const registeredEventSignature = "Registered(bytes32,address)";
 
 export const provider = new ethers.providers.InfuraProvider(
   "goerli",
@@ -64,9 +63,11 @@ export async function getFormattedAttestationFromLog(
 export async function getFormattedSchemaFromLog(
   log: ethers.providers.Log
 ): Promise<Schema> {
-  const [UUID, resolver, index, schema] = await schemaContract.getSchema(
+  const [UUID, resolver, schema] = await schemaContract.getSchema(
     log.topics[1]
   );
+
+  const schemaCount = await prisma.schema.count();
 
   const block = await provider.getBlock(log.blockNumber);
   const tx = await provider.getTransaction(log.transactionHash);
@@ -74,9 +75,9 @@ export async function getFormattedSchemaFromLog(
   return {
     id: UUID,
     schema: ethers.utils.toUtf8String(schema),
-    schemaData: schema,
+    schemaData: (schema as BigNumber).toHexString(),
     creator: tx.from,
-    index: index.toString(),
+    index: String(schemaCount + 1),
     resolver,
     time: block.timestamp.toString(),
     txid: log.transactionHash,
