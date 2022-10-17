@@ -1,5 +1,5 @@
 import { prisma } from "./db.server";
-import { BigNumber, ethers } from "ethers";
+import { ethers } from "ethers";
 import { Attestation, Schema } from "@prisma/client";
 import dayjs from "dayjs";
 import pLimit from "p-limit";
@@ -67,17 +67,16 @@ export async function getFormattedSchemaFromLog(
     log.topics[1]
   );
 
-  const schemaCount = await prisma.schema.count();
-
   const block = await provider.getBlock(log.blockNumber);
   const tx = await provider.getTransaction(log.transactionHash);
+  const schemaCount = await prisma.schema.count();
 
   return {
     id: UUID,
-    schema: ethers.utils.toUtf8String(schema),
-    schemaData: (schema as BigNumber).toHexString(),
+    schema: schema,
+    schemaData: schema,
     creator: tx.from,
-    index: String(schemaCount + 1),
+    index: (schemaCount + 1).toString(),
     resolver,
     time: block.timestamp.toString(),
     txid: log.transactionHash,

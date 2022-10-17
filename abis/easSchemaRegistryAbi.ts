@@ -14,27 +14,9 @@ export const easSchemaRegistryAbi = [
         type: "bytes32",
       },
       {
-        indexed: true,
-        internalType: "uint256",
-        name: "index",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "bytes",
-        name: "schema",
-        type: "bytes",
-      },
-      {
-        indexed: false,
-        internalType: "contract ISchemaResolver",
-        name: "resolver",
-        type: "address",
-      },
-      {
         indexed: false,
         internalType: "address",
-        name: "attester",
+        name: "registerer",
         type: "address",
       },
     ],
@@ -77,14 +59,9 @@ export const easSchemaRegistryAbi = [
             type: "address",
           },
           {
-            internalType: "uint256",
-            name: "index",
-            type: "uint256",
-          },
-          {
-            internalType: "bytes",
+            internalType: "string",
             name: "schema",
-            type: "bytes",
+            type: "string",
           },
         ],
         internalType: "struct SchemaRecord",
@@ -96,24 +73,11 @@ export const easSchemaRegistryAbi = [
     type: "function",
   },
   {
-    inputs: [],
-    name: "getSchemaCount",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
     inputs: [
       {
-        internalType: "bytes",
+        internalType: "string",
         name: "schema",
-        type: "bytes",
+        type: "string",
       },
       {
         internalType: "contract ISchemaResolver",
