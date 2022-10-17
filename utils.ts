@@ -73,7 +73,6 @@ export async function getFormattedSchemaFromLog(
   return {
     id: UUID,
     schema: schema,
-    schemaData: schema,
     creator: tx.from,
     resolver,
     time: block.timestamp.toString(),

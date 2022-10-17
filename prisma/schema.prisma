@@ -12,7 +12,6 @@ datasource db {
 
 model Schema {
   id           String        @id
-  schemaData   String
   schema       String
   creator      String
   resolver     String
