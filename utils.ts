@@ -3,8 +3,9 @@ import { ethers } from "ethers";
 import { Attestation, Schema } from "@prisma/client";
 import dayjs from "dayjs";
 import pLimit from "p-limit";
-import { easSchemaRegistryAbi } from "./abis/easSchemaRegistryAbi";
-import { easAbi } from "./abis/easAbi";
+import easSchemaRegistryAbi from "./abis/easSchema.json";
+import easAbi from "./abis/eas.json";
+import { Eas__factory, EasSchema__factory } from "./types/ethers-contracts";
 
 const limit = pLimit(5);
 
@@ -22,13 +23,13 @@ export const provider = new ethers.providers.InfuraProvider(
   process.env["INFURA_API_KEY"]
 );
 
-const schemaContract = new ethers.Contract(
+const schemaContract = EasSchema__factory.connect(
   EASSchemaRegistryAddress,
-  easSchemaRegistryAbi,
   provider
 );
 
-const easContract = new ethers.Contract(EASContractAddress, easAbi, provider);
+const easContract = Eas__factory.connect(EASContractAddress, provider);
+// const easContract = new ethers.Contract(EASContractAddress, easAbi, provider);
 
 export async function getFormattedAttestationFromLog(
   log: ethers.providers.Log
