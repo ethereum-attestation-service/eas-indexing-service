@@ -19,6 +19,7 @@ model Schema {
   txid         String
   time         String
   attestations Attestation[]
+  schemaNames  SchemaName[]
 }
 
 model Attestation {
@@ -34,6 +35,16 @@ model Attestation {
   revoked        Boolean
   txid           String
   schemaId       String
+}
+
+model SchemaName {
+  id              String  @id @default(cuid())
+  schemaId        String
+  schema          Schema  @relation(fields: [schemaId], references: [id])
+  attesterAddress String
+  name            String
+  time            String
+  isCreator       Boolean
 }
 
 model ServiceStat {

@@ -17,6 +17,8 @@ export const revokedEventSignature = "Revoked(address,address,bytes32,bytes32)";
 export const attestedEventSignature =
   "Attested(address,address,bytes32,bytes32)";
 export const registeredEventSignature = "Registered(bytes32,address)";
+export const schemaNameUUID =
+  "0xb470821c6361c846977354c26b1386b60f48876c252544b8fdba8fe1888a2c10";
 
 export const provider = new ethers.providers.InfuraProvider(
   "goerli",
@@ -114,6 +116,45 @@ export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
   for (let attestation of attestations) {
     console.log("Creating new attestation", attestation);
     await prisma.attestation.create({ data: attestation });
+    await processCreatedAttestation(attestation);
+  }
+}
+
+export async function processCreatedAttestation(
+  attestation: Attestation
+): Promise<void> {
+  if (attestation.schemaId === schemaNameUUID) {
+    try {
+      const decodedNameAttestationData = ethers.utils.defaultAbiCoder.decode(
+        ["bytes32", "string"],
+        attestation.data
+      );
+
+      const schema = await prisma.schema.findUnique({
+        where: { id: decodedNameAttestationData[0] },
+      });
+
+      if (!schema) {
+        console.log("Error: Schema doesnt exist!");
+        return;
+      }
+
+      console.log("Adding new schema name: ", decodedNameAttestationData[1]);
+
+      await prisma.schemaName.create({
+        data: {
+          name: decodedNameAttestationData[1],
+          schemaId: schema.id,
+          time: dayjs().unix().toString(),
+          attesterAddress: attestation.attester,
+          isCreator:
+            attestation.attester.toLowerCase() === schema.creator.toLowerCase(),
+        },
+      });
+    } catch (e) {
+      console.log("Error: Unable to decode schema name", e);
+      return;
+    }
   }
 }
 
