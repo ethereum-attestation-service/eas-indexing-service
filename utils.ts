@@ -3,8 +3,8 @@ import { ethers } from "ethers";
 import { Attestation, Schema } from "@prisma/client";
 import dayjs from "dayjs";
 import pLimit from "p-limit";
-import easSchemaRegistryAbi from "./abis/easSchema.json";
-import easAbi from "./abis/eas.json";
+import easSchemaRegistryAbi from "../easscan-v2/app/abis/easSchema.json";
+import easAbi from "../easscan-v2/app/abis/eas.json";
 import { Eas__factory, EasSchema__factory } from "./types/ethers-contracts";
 
 const limit = pLimit(5);
