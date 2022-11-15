@@ -11,16 +11,15 @@ datasource db {
 }
 
 model Schema {
-  id                   String                @id
-  schema               String
-  creator              String
-  resolver             String
-  index                String
-  txid                 String
-  time                 String
-  attestations         Attestation[]
-  offchainAttestations OffchainAttestation[]
-  schemaNames          SchemaName[]
+  id           String        @id
+  schema       String
+  creator      String
+  resolver     String
+  index        String
+  txid         String
+  time         String
+  attestations Attestation[]
+  schemaNames  SchemaName[]
 }
 
 model Attestation {
@@ -30,25 +29,15 @@ model Attestation {
   recipient      String
   attester       String
   time           String
+  timeCreated    String
   expirationTime String
   revocationTime String
   refUUID        String
   revoked        Boolean
   txid           String
   schemaId       String
-}
-
-model OffchainAttestation {
-  id             String @id
-  packageData    String
-  schema         Schema @relation(fields: [schemaId], references: [id])
-  recipient      String
-  attester       String
-  time           String
-  expirationTime String
-  refUUID        String
-  schemaId       String
   ipfsHash       String
+  isOffchain     Boolean
 }
 
 model SchemaName {

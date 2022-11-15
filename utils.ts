@@ -29,7 +29,6 @@ const schemaContract = EasSchema__factory.connect(
 );
 
 const easContract = Eas__factory.connect(EASContractAddress, provider);
-// const easContract = new ethers.Contract(EASContractAddress, easAbi, provider);
 
 export async function getFormattedAttestationFromLog(
   log: ethers.providers.Log
@@ -58,6 +57,9 @@ export async function getFormattedAttestationFromLog(
     time: time.toString(),
     txid: log.transactionHash,
     revoked: revocationTime < dayjs().unix() && revocationTime !== 0,
+    isOffchain: false,
+    ipfsHash: "",
+    timeCreated: dayjs().unix().toString(),
   };
 }
 
