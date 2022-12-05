@@ -7,9 +7,9 @@ import { Eas__factory, EasSchema__factory } from "./types/ethers-contracts";
 
 const limit = pLimit(5);
 
-export const EASContractAddress = "0x6e195B51493e56d59768f8a87230ADe73BD4FC86"; // Goerli
+export const EASContractAddress = "0x4369bE21Ed9002Fd4507Df254CF249feF6F8E7E2"; // Goerli
 export const EASSchemaRegistryAddress =
-  "0xB6652C033728658e1413F36cce9cA7f7eEbd5872"; // Goerli
+  "0x6835877d62B51C66B07ECED9E6350D866E9D9a73"; // Goerli
 export const CONTRACT_START_BLOCK = 7741696;
 export const revokedEventSignature = "Revoked(address,address,bytes32,bytes32)";
 export const attestedEventSignature =
