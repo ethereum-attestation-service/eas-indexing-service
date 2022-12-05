@@ -59,6 +59,11 @@
             "type": "address"
           },
           {
+            "internalType": "bool",
+            "name": "revocable",
+            "type": "bool"
+          },
+          {
             "internalType": "string",
             "name": "schema",
             "type": "string"
@@ -83,6 +88,11 @@
         "internalType": "contract ISchemaResolver",
         "name": "resolver",
         "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "revocable",
+        "type": "bool"
       }
     ],
     "name": "register",

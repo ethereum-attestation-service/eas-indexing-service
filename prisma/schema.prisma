@@ -15,6 +15,7 @@ model Schema {
   schema       String
   creator      String
   resolver     String
+  revocable    Boolean
   index        String
   txid         String
   time         String
@@ -33,6 +34,7 @@ model Attestation {
   expirationTime String
   revocationTime String
   refUUID        String
+  revocable      Boolean
   revoked        Boolean
   txid           String
   schemaId       String

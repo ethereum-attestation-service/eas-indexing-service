@@ -62,6 +62,11 @@
   },
   {
     "inputs": [],
+    "name": "Irrevocable",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "NotFound",
     "type": "error"
   },
@@ -163,6 +168,11 @@
         "type": "uint32"
       },
       {
+        "internalType": "bool",
+        "name": "revocable",
+        "type": "bool"
+      },
+      {
         "internalType": "bytes32",
         "name": "refUUID",
         "type": "bytes32"
@@ -200,6 +210,11 @@
         "internalType": "uint32",
         "name": "expirationTime",
         "type": "uint32"
+      },
+      {
+        "internalType": "bool",
+        "name": "revocable",
+        "type": "bool"
       },
       {
         "internalType": "bytes32",
@@ -296,6 +311,11 @@
             "type": "address"
           },
           {
+            "internalType": "bool",
+            "name": "revocable",
+            "type": "bool"
+          },
+          {
             "internalType": "bytes",
             "name": "data",
             "type": "bytes"
@@ -364,7 +384,7 @@
     ],
     "name": "revoke",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -397,7 +417,7 @@
     ],
     "name": "revokeByDelegation",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   }
 ]

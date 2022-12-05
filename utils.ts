@@ -42,6 +42,7 @@ export async function getFormattedAttestationFromLog(
     revocationTime,
     recipient,
     attester,
+    revocable,
     data,
   ] = await easContract.getAttestation(log.data);
 
@@ -60,13 +61,14 @@ export async function getFormattedAttestationFromLog(
     isOffchain: false,
     ipfsHash: "",
     timeCreated: dayjs().unix().toString(),
+    revocable
   };
 }
 
 export async function getFormattedSchemaFromLog(
   log: ethers.providers.Log
 ): Promise<Omit<Schema, "index">> {
-  const [UUID, resolver, schema] = await schemaContract.getSchema(
+  const [UUID, resolver, revocable, schema] = await schemaContract.getSchema(
     log.topics[1]
   );
 
@@ -80,6 +82,7 @@ export async function getFormattedSchemaFromLog(
     resolver,
     time: block.timestamp.toString(),
     txid: log.transactionHash,
+    revocable
   };
 }
 
