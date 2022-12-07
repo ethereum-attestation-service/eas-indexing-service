@@ -7,16 +7,16 @@ import { Eas__factory, EasSchema__factory } from "./types/ethers-contracts";
 
 const limit = pLimit(5);
 
-export const EASContractAddress = "0x4369bE21Ed9002Fd4507Df254CF249feF6F8E7E2"; // Goerli
+export const EASContractAddress = "0x4369bE21Ed9002Fd4507Df254CF249feF6F8E7E2"; // Goerli v0.19
 export const EASSchemaRegistryAddress =
-  "0x6835877d62B51C66B07ECED9E6350D866E9D9a73"; // Goerli
+  "0x6835877d62B51C66B07ECED9E6350D866E9D9a73"; // Goerli v0.19
 export const CONTRACT_START_BLOCK = 7741696;
 export const revokedEventSignature = "Revoked(address,address,bytes32,bytes32)";
 export const attestedEventSignature =
   "Attested(address,address,bytes32,bytes32)";
 export const registeredEventSignature = "Registered(bytes32,address)";
 export const schemaNameUUID =
-  "0xb470821c6361c846977354c26b1386b60f48876c252544b8fdba8fe1888a2c10";
+  "0x08533158c20cd1c0702ebafd8e24d6e90fe1073bf49ecc2f02ae1161a77c0335";
 
 export const provider = new ethers.providers.InfuraProvider(
   "goerli",
