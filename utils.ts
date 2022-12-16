@@ -88,7 +88,9 @@ export async function getFormattedSchemaFromLog(
 
 export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
   for (let log of logs) {
-    await easContract.revoke(log.data);
+
+    const attestation = await easContract.getAttestation(log.data);
+    await prisma.attestation.update({where: {id: attestation[0]}, data: {revoked: true, revocationTime: attestation.revocationTime.toString()}})
   }
 }
 
