@@ -122,9 +122,12 @@ export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
   const attestations = await Promise.all(promises);
 
   for (let attestation of attestations) {
-    console.log("Creating new attestation", attestation);
-    await prisma.attestation.create({data: attestation});
-    await processCreatedAttestation(attestation);
+    if (attestation.id !== ethers.constants.HashZero) {
+      console.log("Creating new attestation", attestation);
+
+      await prisma.attestation.create({data: attestation});
+      await processCreatedAttestation(attestation);
+    }
   }
 }
 
