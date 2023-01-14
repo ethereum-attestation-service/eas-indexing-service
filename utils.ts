@@ -313,7 +313,7 @@ export async function updateDbFromRelevantLog(log: ethers.providers.Log) {
       await revokeAttestationsFromLogs([log]);
       await updateServiceStatToLastBlock(
         false,
-        "latestRevocationBlockNum",
+        "latestAttestationRevocationBlockNum",
         log.blockNumber
       );
     }
