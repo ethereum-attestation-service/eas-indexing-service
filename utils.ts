@@ -30,21 +30,49 @@ const schemaContract = EasSchema__factory.connect(
 
 const easContract = Eas__factory.connect(EASContractAddress, provider);
 
+// Timeout Promise
+function timeout(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+
 export async function getFormattedAttestationFromLog(
   log: ethers.providers.Log
 ): Promise<Attestation> {
-  const [
-    UUID,
-    schemaUUID,
-    refUUID,
-    time,
-    expirationTime,
-    revocationTime,
-    recipient,
-    attester,
-    revocable,
-    data,
-  ] = await easContract.getAttestation(log.data);
+  let UUID = ethers.constants.HashZero;
+  let schemaUUID = ethers.constants.HashZero;
+  let refUUID = ethers.constants.HashZero;
+  let time = 0;
+  let expirationTime = 0;
+  let revocationTime = 0;
+  let recipient = ethers.constants.AddressZero;
+  let attester = ethers.constants.AddressZero;
+  let revocable = false;
+  let data = "";
+
+  let tries = 1;
+
+  do {
+    [
+      UUID,
+      schemaUUID,
+      refUUID,
+      time,
+      expirationTime,
+      revocationTime,
+      recipient,
+      attester,
+      revocable,
+      data,
+    ] = await easContract.getAttestation(log.data);
+
+    if (UUID === ethers.constants.HashZero) {
+      console.log(`Delaying attestation poll after try #${tries}...`);
+      await timeout(500);
+    }
+
+    tries++;
+  } while (UUID === ethers.constants.HashZero);
 
   return {
     id: UUID,
@@ -68,9 +96,28 @@ export async function getFormattedAttestationFromLog(
 export async function getFormattedSchemaFromLog(
   log: ethers.providers.Log
 ): Promise<Omit<Schema, "index">> {
-  const [UUID, resolver, revocable, schema] = await schemaContract.getSchema(
-    log.topics[1]
-  );
+
+  let UUID = ethers.constants.HashZero;
+  let resolver = ethers.constants.AddressZero;
+  let revocable = false;
+  let schema = "";
+
+  let tries = 1;
+
+
+  do {
+    [UUID, resolver, revocable, schema] = await schemaContract.getSchema(
+      log.topics[1]
+    );
+
+    if (UUID === ethers.constants.HashZero) {
+      console.log(`Delaying schema poll after try #${tries}...`);
+      await timeout(500);
+    }
+
+    tries++;
+  } while (UUID === ethers.constants.HashZero);
+
 
   const block = await provider.getBlock(log.blockNumber);
   const tx = await provider.getTransaction(log.transactionHash);
@@ -122,10 +169,10 @@ export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
   const attestations = await Promise.all(promises);
 
   for (let attestation of attestations) {
-      console.log("Creating new attestation", attestation);
+    console.log("Creating new attestation", attestation);
 
-      await prisma.attestation.create({data: attestation});
-      await processCreatedAttestation(attestation);
+    await prisma.attestation.create({data: attestation});
+    await processCreatedAttestation(attestation);
   }
 }
 
