@@ -7,10 +7,10 @@ import {Eas__factory, EasSchema__factory} from "./types/ethers-contracts";
 
 const limit = pLimit(5);
 
-export const EASContractAddress = "0xf0273638b19877fbA1ca9282Adb7ED83ADa819F8"; // Goerli v0.22
+export const EASContractAddress = "0x50DB967C805A88FAebA43a2049AAc78052ff9f8F"; // Sepolia v0.24
 export const EASSchemaRegistryAddress =
-  "0x40E750bbDCC059cb5F3c24e1B5C84E2D3ea8D2Fc"; // Goerli v0.22
-export const CONTRACT_START_BLOCK = 8284412;
+  "0x16399b867877D7f59deE9f04bD79B07fa8D17f7A"; // Sepolia v0.24
+export const CONTRACT_START_BLOCK = 2778242;
 export const revokedEventSignature = "Revoked(address,address,bytes32,bytes32)";
 export const attestedEventSignature =
   "Attested(address,address,bytes32,bytes32)";
@@ -19,7 +19,7 @@ export const schemaNameUUID =
   "0x44d562ac1d7cd77e232978687fea027ace48f719cf1d58c7888e509663bb87fc"; // Goerli v0.22
 
 export const provider = new ethers.providers.InfuraProvider(
-  "goerli",
+  "sepolia",
   process.env["INFURA_API_KEY"]
 );
 
@@ -42,9 +42,9 @@ export async function getFormattedAttestationFromLog(
   let UUID = ethers.constants.HashZero;
   let schemaUUID = ethers.constants.HashZero;
   let refUUID = ethers.constants.HashZero;
-  let time = 0;
-  let expirationTime = 0;
-  let revocationTime = 0;
+  let time = ethers.BigNumber.from(0);
+  let expirationTime = ethers.BigNumber.from(0);
+  let revocationTime = ethers.BigNumber.from(0);
   let recipient = ethers.constants.AddressZero;
   let attester = ethers.constants.AddressZero;
   let revocable = false;
@@ -56,10 +56,10 @@ export async function getFormattedAttestationFromLog(
     [
       UUID,
       schemaUUID,
-      refUUID,
       time,
       expirationTime,
       revocationTime,
+      refUUID,
       recipient,
       attester,
       revocable,
@@ -85,7 +85,7 @@ export async function getFormattedAttestationFromLog(
     expirationTime: expirationTime.toString(),
     time: time.toString(),
     txid: log.transactionHash,
-    revoked: revocationTime < dayjs().unix() && revocationTime !== 0,
+    revoked: revocationTime.lt(dayjs().unix()) && !revocationTime.isZero(),
     isOffchain: false,
     ipfsHash: "",
     timeCreated: dayjs().unix().toString(),
@@ -332,10 +332,6 @@ export async function getAndUpdateLatestSchemas() {
   );
 
   console.log(`New schemas: ${logs.length}`);
-}
-
-export async function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export async function updateDbFromRelevantLog(log: ethers.providers.Log) {

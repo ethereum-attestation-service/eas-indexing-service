@@ -22,6 +22,11 @@
   },
   {
     "inputs": [],
+    "name": "AlreadyTimestamped",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InsufficientValue",
     "type": "error"
   },
@@ -163,6 +168,25 @@
     "type": "event"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "data",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "timestamp",
+        "type": "uint64"
+      }
+    ],
+    "name": "Timestamped",
+    "type": "event"
+  },
+  {
     "inputs": [],
     "name": "VERSION",
     "outputs": [
@@ -192,9 +216,9 @@
                 "type": "address"
               },
               {
-                "internalType": "uint32",
+                "internalType": "uint64",
                 "name": "expirationTime",
-                "type": "uint32"
+                "type": "uint64"
               },
               {
                 "internalType": "bool",
@@ -255,9 +279,9 @@
                 "type": "address"
               },
               {
-                "internalType": "uint32",
+                "internalType": "uint64",
                 "name": "expirationTime",
-                "type": "uint32"
+                "type": "uint64"
               },
               {
                 "internalType": "bool",
@@ -364,24 +388,24 @@
             "type": "bytes32"
           },
           {
+            "internalType": "uint64",
+            "name": "time",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "expirationTime",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "revocationTime",
+            "type": "uint64"
+          },
+          {
             "internalType": "bytes32",
             "name": "refUUID",
             "type": "bytes32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "time",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "expirationTime",
-            "type": "uint32"
-          },
-          {
-            "internalType": "uint32",
-            "name": "revocationTime",
-            "type": "uint32"
           },
           {
             "internalType": "address",
@@ -474,6 +498,25 @@
     "inputs": [
       {
         "internalType": "bytes32",
+        "name": "data",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getTimestamp",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
         "name": "uuid",
         "type": "bytes32"
       }
@@ -506,9 +549,9 @@
                 "type": "address"
               },
               {
-                "internalType": "uint32",
+                "internalType": "uint64",
                 "name": "expirationTime",
-                "type": "uint32"
+                "type": "uint64"
               },
               {
                 "internalType": "bool",
@@ -569,9 +612,9 @@
                 "type": "address"
               },
               {
-                "internalType": "uint32",
+                "internalType": "uint64",
                 "name": "expirationTime",
-                "type": "uint32"
+                "type": "uint64"
               },
               {
                 "internalType": "bool",
@@ -746,6 +789,25 @@
   {
     "inputs": [
       {
+        "internalType": "bytes32[]",
+        "name": "data",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "multiTimestamp",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "components": [
           {
             "internalType": "bytes32",
@@ -842,6 +904,25 @@
     "name": "revokeByDelegation",
     "outputs": [],
     "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "data",
+        "type": "bytes32"
+      }
+    ],
+    "name": "timestamp",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]
