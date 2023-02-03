@@ -7,16 +7,16 @@ import {Eas__factory, EasSchema__factory} from "./types/ethers-contracts";
 
 const limit = pLimit(5);
 
-export const EASContractAddress = "0x50DB967C805A88FAebA43a2049AAc78052ff9f8F"; // Sepolia v0.24
+export const EASContractAddress = "0x25E36ebB051ae76c0D59E6c1dD0b29A5fc520061"; // Sepolia v0.25
 export const EASSchemaRegistryAddress =
-  "0x16399b867877D7f59deE9f04bD79B07fa8D17f7A"; // Sepolia v0.24
-export const CONTRACT_START_BLOCK = 2778242;
+  "0x4dd8b988B64A4052B5f142Af845AA49D2B2cD10D"; // Sepolia v0.25
+export const CONTRACT_START_BLOCK = 2825261;
 export const revokedEventSignature = "Revoked(address,address,bytes32,bytes32)";
 export const attestedEventSignature =
   "Attested(address,address,bytes32,bytes32)";
 export const registeredEventSignature = "Registered(bytes32,address)";
 export const schemaNameUUID =
-  "0x44d562ac1d7cd77e232978687fea027ace48f719cf1d58c7888e509663bb87fc"; // Goerli v0.22
+  "0x44d562ac1d7cd77e232978687fea027ace48f719cf1d58c7888e509663bb87fc"; // Sepolia v0.24
 
 export const provider = new ethers.providers.InfuraProvider(
   "sepolia",
