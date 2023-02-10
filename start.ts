@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import {ethers} from "ethers";
 import {
   attestedEventSignature,
   getAndUpdateLatestAttestationRevocations,
@@ -6,7 +6,7 @@ import {
   getAndUpdateLatestSchemas, getAndUpdateLatestTimestamps,
   provider,
   registeredEventSignature,
-  revokedEventSignature,
+  revokedEventSignature, timestampEventSignature,
   updateDbFromRelevantLog,
 } from "./utils";
 
@@ -40,6 +40,7 @@ async function go() {
         ethers.utils.id(registeredEventSignature),
         ethers.utils.id(attestedEventSignature),
         ethers.utils.id(revokedEventSignature),
+        ethers.utils.id(timestampEventSignature),
       ],
     ],
   };
