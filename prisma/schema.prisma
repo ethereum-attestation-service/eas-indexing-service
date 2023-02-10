@@ -52,6 +52,11 @@ model SchemaName {
   isCreator       Boolean
 }
 
+model Timestamp {
+  id        String @id
+  timestamp Int
+}
+
 model ServiceStat {
   name  String @id
   value String

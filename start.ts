@@ -3,7 +3,7 @@ import {
   attestedEventSignature,
   getAndUpdateLatestAttestationRevocations,
   getAndUpdateLatestAttestations,
-  getAndUpdateLatestSchemas,
+  getAndUpdateLatestSchemas, getAndUpdateLatestTimestamps,
   provider,
   registeredEventSignature,
   revokedEventSignature,
@@ -24,6 +24,7 @@ export async function update() {
     await getAndUpdateLatestSchemas();
     await getAndUpdateLatestAttestations();
     await getAndUpdateLatestAttestationRevocations();
+    await getAndUpdateLatestTimestamps();
   } catch (e) {
     console.log("Error!", e);
   }

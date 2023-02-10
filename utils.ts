@@ -15,8 +15,9 @@ export const revokedEventSignature = "Revoked(address,address,bytes32,bytes32)";
 export const attestedEventSignature =
   "Attested(address,address,bytes32,bytes32)";
 export const registeredEventSignature = "Registered(bytes32,address)";
+export const timestampEventSignature = "Timestamped(bytes32,uint64)";
 export const schemaNameUUID =
-  "0x44d562ac1d7cd77e232978687fea027ace48f719cf1d58c7888e509663bb87fc"; // Sepolia v0.24
+  "0x44d562ac1d7cd77e232978687fea027ace48f719cf1d58c7888e509663bb87fc"; // Sepolia v0.25
 
 export const provider = new ethers.providers.JsonRpcProvider('https://rpc.sepolia.ethpandaops.io/', 'sepolia');
 
@@ -173,6 +174,16 @@ export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
   }
 }
 
+export async function createTimestampForLogs(logs: ethers.providers.Log[]) {
+  for (let log of logs) {
+    const uuid = log.topics[1];
+    const timestamp = ethers.BigNumber.from(log.topics[2]).toNumber();
+    console.log("Creating new Log for", uuid, timestamp);
+
+    await prisma.timestamp.create({data: {id:uuid, timestamp}});
+  }
+}
+
 export async function processCreatedAttestation(
   attestation: Attestation
 ): Promise<void> {
@@ -257,6 +268,35 @@ export async function updateServiceStatToLastBlock(
     }
   }
 }
+
+export async function getAndUpdateLatestTimestamps() {
+  const serviceStatPropertyName = "latestTimestampBlockNum";
+
+  const {latestBlockNumServiceStat, fromBlock} = await getStartData(
+    serviceStatPropertyName
+  );
+
+  console.log(`Timestamp update starting from block ${fromBlock}`);
+
+  const logs = await provider.getLogs({
+    address: EASContractAddress,
+    fromBlock: fromBlock + 1,
+    topics: [ethers.utils.id(timestampEventSignature)],
+  });
+
+  await createTimestampForLogs(logs);
+
+  const lastBlock = getLastBlockNumberFromLog(logs);
+
+  await updateServiceStatToLastBlock(
+    !latestBlockNumServiceStat,
+    serviceStatPropertyName,
+    lastBlock
+  );
+
+  console.log(`New Timestamps: ${logs.length}`);
+}
+
 
 export async function getAndUpdateLatestAttestations() {
   const serviceStatPropertyName = "latestAttestationBlockNum";
@@ -354,6 +394,13 @@ export async function updateDbFromRelevantLog(log: ethers.providers.Log) {
       await updateServiceStatToLastBlock(
         false,
         "latestAttestationRevocationBlockNum",
+        log.blockNumber
+      );
+    } else if (log.topics[0] === ethers.utils.id(timestampEventSignature)) {
+      await createTimestampForLogs([log]);
+      await updateServiceStatToLastBlock(
+        false,
+        "latestTimestampBlockNum",
         log.blockNumber
       );
     }
