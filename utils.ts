@@ -18,10 +18,7 @@ export const registeredEventSignature = "Registered(bytes32,address)";
 export const schemaNameUUID =
   "0x44d562ac1d7cd77e232978687fea027ace48f719cf1d58c7888e509663bb87fc"; // Sepolia v0.24
 
-export const provider = new ethers.providers.InfuraProvider(
-  "sepolia",
-  process.env["INFURA_API_KEY"]
-);
+export const provider = new ethers.providers.JsonRpcProvider('https://rpc.sepolia.ethpandaops.io/', 'sepolia');
 
 const schemaContract = EasSchema__factory.connect(
   EASSchemaRegistryAddress,
