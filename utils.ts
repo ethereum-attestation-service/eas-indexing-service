@@ -1,9 +1,9 @@
-import {prisma} from "./db.server";
-import {ethers} from "ethers";
-import {Attestation, Schema} from "@prisma/client";
+import { prisma } from "./db.server";
+import { ethers } from "ethers";
+import { Attestation, Schema } from "@prisma/client";
 import dayjs from "dayjs";
 import pLimit from "p-limit";
-import {Eas__factory, EasSchema__factory} from "./types/ethers-contracts";
+import { Eas__factory, EasSchema__factory } from "./types/ethers-contracts";
 
 const limit = pLimit(5);
 
@@ -19,7 +19,10 @@ export const timestampEventSignature = "Timestamped(bytes32,uint64)";
 export const schemaNameUUID =
   "0x44d562ac1d7cd77e232978687fea027ace48f719cf1d58c7888e509663bb87fc"; // Sepolia v0.25
 
-export const provider = new ethers.providers.JsonRpcProvider('https://rpc.sepolia.ethpandaops.io/', 'sepolia');
+export const provider = new ethers.providers.JsonRpcProvider(
+  "https://rpc.sepolia.ethpandaops.io/",
+  "sepolia"
+);
 
 const schemaContract = EasSchema__factory.connect(
   EASSchemaRegistryAddress,
@@ -32,7 +35,6 @@ const easContract = Eas__factory.connect(EASContractAddress, provider);
 function timeout(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-
 
 export async function getFormattedAttestationFromLog(
   log: ethers.providers.Log
@@ -87,21 +89,19 @@ export async function getFormattedAttestationFromLog(
     isOffchain: false,
     ipfsHash: "",
     timeCreated: dayjs().unix().toString(),
-    revocable
+    revocable,
   };
 }
 
 export async function getFormattedSchemaFromLog(
   log: ethers.providers.Log
 ): Promise<Omit<Schema, "index">> {
-
   let UUID = ethers.constants.HashZero;
   let resolver = ethers.constants.AddressZero;
   let revocable = false;
   let schema = "";
 
   let tries = 1;
-
 
   do {
     [UUID, resolver, revocable, schema] = await schemaContract.getSchema(
@@ -116,7 +116,6 @@ export async function getFormattedSchemaFromLog(
     tries++;
   } while (UUID === ethers.constants.HashZero);
 
-
   const block = await provider.getBlock(log.blockNumber);
   const tx = await provider.getTransaction(log.transactionHash);
 
@@ -127,18 +126,20 @@ export async function getFormattedSchemaFromLog(
     resolver,
     time: block.timestamp.toString(),
     txid: log.transactionHash,
-    revocable
+    revocable,
   };
 }
 
 export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
   for (let log of logs) {
-
     const attestation = await easContract.getAttestation(log.data);
     await prisma.attestation.update({
-      where: {id: attestation[0]},
-      data: {revoked: true, revocationTime: attestation.revocationTime.toString()}
-    })
+      where: { id: attestation[0] },
+      data: {
+        revoked: true,
+        revocationTime: attestation.revocationTime.toString(),
+      },
+    });
   }
 }
 
@@ -154,7 +155,7 @@ export async function createSchemasFromLogs(logs: ethers.providers.Log[]) {
 
     console.log("Creating new schema", schema);
     await prisma.schema.create({
-      data: {...schema, index: (schemaCount + 1).toString()},
+      data: { ...schema, index: (schemaCount + 1).toString() },
     });
   }
 }
@@ -169,7 +170,7 @@ export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
   for (let attestation of attestations) {
     console.log("Creating new attestation", attestation);
 
-    await prisma.attestation.create({data: attestation});
+    await prisma.attestation.create({ data: attestation });
     await processCreatedAttestation(attestation);
   }
 }
@@ -180,7 +181,16 @@ export async function createTimestampForLogs(logs: ethers.providers.Log[]) {
     const timestamp = ethers.BigNumber.from(log.topics[2]).toNumber();
     console.log("Creating new Log for", uuid, timestamp);
 
-    await prisma.timestamp.create({data: {id:uuid, timestamp}});
+    const tx = await provider.getTransaction(log.transactionHash);
+
+    await prisma.timestamp.create({
+      data: {
+        id: uuid,
+        timestamp,
+        from: tx.from,
+        txid: log.transactionHash,
+      },
+    });
   }
 }
 
@@ -195,7 +205,7 @@ export async function processCreatedAttestation(
       );
 
       const schema = await prisma.schema.findUnique({
-        where: {id: decodedNameAttestationData[0]},
+        where: { id: decodedNameAttestationData[0] },
       });
 
       if (!schema) {
@@ -225,7 +235,7 @@ export async function processCreatedAttestation(
 export async function getAndUpdateLatestAttestationRevocations() {
   const serviceStatPropertyName = "latestAttestationRevocationBlockNum";
 
-  const {latestBlockNumServiceStat, fromBlock} = await getStartData(
+  const { latestBlockNumServiceStat, fromBlock } = await getStartData(
     serviceStatPropertyName
   );
 
@@ -257,13 +267,13 @@ export async function updateServiceStatToLastBlock(
 ) {
   if (shouldCreate) {
     await prisma.serviceStat.create({
-      data: {name: serviceStatPropertyName, value: lastBlock.toString()},
+      data: { name: serviceStatPropertyName, value: lastBlock.toString() },
     });
   } else {
     if (lastBlock !== 0) {
       await prisma.serviceStat.update({
-        where: {name: serviceStatPropertyName},
-        data: {value: lastBlock.toString()},
+        where: { name: serviceStatPropertyName },
+        data: { value: lastBlock.toString() },
       });
     }
   }
@@ -272,7 +282,7 @@ export async function updateServiceStatToLastBlock(
 export async function getAndUpdateLatestTimestamps() {
   const serviceStatPropertyName = "latestTimestampBlockNum";
 
-  const {latestBlockNumServiceStat, fromBlock} = await getStartData(
+  const { latestBlockNumServiceStat, fromBlock } = await getStartData(
     serviceStatPropertyName
   );
 
@@ -297,11 +307,10 @@ export async function getAndUpdateLatestTimestamps() {
   console.log(`New Timestamps: ${logs.length}`);
 }
 
-
 export async function getAndUpdateLatestAttestations() {
   const serviceStatPropertyName = "latestAttestationBlockNum";
 
-  const {latestBlockNumServiceStat, fromBlock} = await getStartData(
+  const { latestBlockNumServiceStat, fromBlock } = await getStartData(
     serviceStatPropertyName
   );
 
@@ -328,7 +337,7 @@ export async function getAndUpdateLatestAttestations() {
 
 async function getStartData(serviceStatPropertyName: string) {
   const latestBlockNumServiceStat = await prisma.serviceStat.findFirst({
-    where: {name: serviceStatPropertyName},
+    where: { name: serviceStatPropertyName },
   });
 
   let fromBlock: number = CONTRACT_START_BLOCK;
@@ -336,7 +345,7 @@ async function getStartData(serviceStatPropertyName: string) {
   if (latestBlockNumServiceStat?.value) {
     fromBlock = Number(latestBlockNumServiceStat.value);
   }
-  return {latestBlockNumServiceStat, fromBlock};
+  return { latestBlockNumServiceStat, fromBlock };
 }
 
 export function getLastBlockNumberFromLog(logs: ethers.providers.Log[]) {
@@ -346,7 +355,7 @@ export function getLastBlockNumberFromLog(logs: ethers.providers.Log[]) {
 export async function getAndUpdateLatestSchemas() {
   const serviceStatPropertyName = "latestSchemaBlockNum";
 
-  const {latestBlockNumServiceStat, fromBlock} = await getStartData(
+  const { latestBlockNumServiceStat, fromBlock } = await getStartData(
     serviceStatPropertyName
   );
 

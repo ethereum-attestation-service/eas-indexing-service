@@ -54,6 +54,8 @@ model SchemaName {
 
 model Timestamp {
   id        String @id
+  from      String
+  txid      String
   timestamp Int
 }
 
