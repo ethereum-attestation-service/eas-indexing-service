@@ -7,10 +7,48 @@ import { Eas__factory, EasSchema__factory } from "./types/ethers-contracts";
 
 const limit = pLimit(5);
 
-export const EASContractAddress = "0x25E36ebB051ae76c0D59E6c1dD0b29A5fc520061"; // Sepolia v0.25
-export const EASSchemaRegistryAddress =
-  "0x4dd8b988B64A4052B5f142Af845AA49D2B2cD10D"; // Sepolia v0.25
-export const CONTRACT_START_BLOCK = 2825261;
+export type EASChainConfig = {
+  chainId: number;
+  chainName: string;
+  version: string;
+  contractAddress: string;
+  schemaRegistryAddress: string;
+  etherscanURL: string;
+  /** Must contain a trailing dot (unless mainnet). */
+  subdomain: string;
+  contractStartBlock: number;
+};
+
+export const CHAIN_ID = Number(process.env.CHAIN_ID);
+
+if (!CHAIN_ID) {
+  throw new Error("No chain ID specified");
+}
+
+export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
+  {
+    chainId: 11155111,
+    chainName: "Sepolia",
+    subdomain: "",
+    version: "0.25",
+    contractAddress: "0x25E36ebB051ae76c0D59E6c1dD0b29A5fc520061",
+    schemaRegistryAddress: "0x4dd8b988B64A4052B5f142Af845AA49D2B2cD10D",
+    etherscanURL: "https://sepolia.etherscan.io",
+    contractStartBlock: 2825261,
+  },
+];
+
+const activeChainConfig = EAS_CHAIN_CONFIGS.find(
+  (config) => config.chainId === CHAIN_ID
+);
+
+if (!activeChainConfig) {
+  throw new Error("No chain config found for chain ID");
+}
+
+export const EASContractAddress = activeChainConfig.contractAddress;
+export const EASSchemaRegistryAddress = activeChainConfig.schemaRegistryAddress;
+export const CONTRACT_START_BLOCK = activeChainConfig.contractStartBlock;
 export const revokedEventSignature = "Revoked(address,address,bytes32,bytes32)";
 export const attestedEventSignature =
   "Attested(address,address,bytes32,bytes32)";
