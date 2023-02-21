@@ -17,6 +17,7 @@ export type EASChainConfig = {
   /** Must contain a trailing dot (unless mainnet). */
   subdomain: string;
   contractStartBlock: number;
+  rpcProvider: string;
 };
 
 export const CHAIN_ID = Number(process.env.CHAIN_ID);
@@ -35,6 +36,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     schemaRegistryAddress: "0x4dd8b988B64A4052B5f142Af845AA49D2B2cD10D",
     etherscanURL: "https://sepolia.etherscan.io",
     contractStartBlock: 2825261,
+    rpcProvider: "https://rpc.sepolia.ethpandaops.io/",
   },
   {
     chainId: 42161,
@@ -45,6 +47,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     schemaRegistryAddress: "0x7b24C7f8AF365B4E308b6acb0A7dfc85d034Cb3f",
     etherscanURL: "https://sepolia.etherscan.io",
     contractStartBlock: 62918460,
+    rpcProvider: "https://arb1.arbitrum.io/rpc",
   },
 ];
 
@@ -68,8 +71,8 @@ export const schemaNameUUID =
   "0x44d562ac1d7cd77e232978687fea027ace48f719cf1d58c7888e509663bb87fc"; // Sepolia v0.25
 
 export const provider = new ethers.providers.JsonRpcProvider(
-  "https://rpc.sepolia.ethpandaops.io/",
-  "sepolia"
+  activeChainConfig.rpcProvider,
+  activeChainConfig.chainName
 );
 
 const schemaContract = EasSchema__factory.connect(
