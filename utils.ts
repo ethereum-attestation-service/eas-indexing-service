@@ -36,6 +36,16 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     etherscanURL: "https://sepolia.etherscan.io",
     contractStartBlock: 2825261,
   },
+  {
+    chainId: 42161,
+    chainName: "arbitrum",
+    subdomain: "",
+    version: "0.26",
+    contractAddress: "0x1a5650D0EcbCa349DD84bAFa85790E3e6955eb84",
+    schemaRegistryAddress: "0x7b24C7f8AF365B4E308b6acb0A7dfc85d034Cb3f",
+    etherscanURL: "https://sepolia.etherscan.io",
+    contractStartBlock: 62918460,
+  },
 ];
 
 const activeChainConfig = EAS_CHAIN_CONFIGS.find(
