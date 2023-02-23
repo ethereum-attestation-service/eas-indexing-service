@@ -27,16 +27,27 @@ if (!CHAIN_ID) {
 }
 
 export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
+  // {
+  //   chainId: 11155111,
+  //   chainName: "Sepolia",
+  //   subdomain: "",
+  //   version: "0.25",
+  //   contractAddress: "0x25E36ebB051ae76c0D59E6c1dD0b29A5fc520061",
+  //   schemaRegistryAddress: "0x4dd8b988B64A4052B5f142Af845AA49D2B2cD10D",
+  //   etherscanURL: "https://sepolia.etherscan.io",
+  //   contractStartBlock: 2825261,
+  //   rpcProvider: "https://rpc.sepolia.ethpandaops.io/",
+  // },
   {
     chainId: 11155111,
-    chainName: "Sepolia",
+    chainName: "sepolia",
     subdomain: "",
-    version: "0.25",
-    contractAddress: "0x25E36ebB051ae76c0D59E6c1dD0b29A5fc520061",
-    schemaRegistryAddress: "0x4dd8b988B64A4052B5f142Af845AA49D2B2cD10D",
+    version: "0.26",
+    contractAddress: "0xC2679fBD37d54388Ce493F1DB75320D236e1815e",
+    schemaRegistryAddress: "0x0a7E2Ff54e76B8E6659aedc9103FB21c038050D0",
     etherscanURL: "https://sepolia.etherscan.io",
-    contractStartBlock: 2825261,
-    rpcProvider: "https://rpc.sepolia.ethpandaops.io/",
+    contractStartBlock: 2958570,
+    rpcProvider: "https://rpc.sepolia.org/",
   },
   {
     chainId: 42161,
