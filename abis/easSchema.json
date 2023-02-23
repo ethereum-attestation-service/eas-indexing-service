@@ -10,7 +10,7 @@
       {
         "indexed": true,
         "internalType": "bytes32",
-        "name": "uuid",
+        "name": "uid",
         "type": "bytes32"
       },
       {
@@ -40,7 +40,7 @@
     "inputs": [
       {
         "internalType": "bytes32",
-        "name": "uuid",
+        "name": "uid",
         "type": "bytes32"
       }
     ],
@@ -50,7 +50,7 @@
         "components": [
           {
             "internalType": "bytes32",
-            "name": "uuid",
+            "name": "uid",
             "type": "bytes32"
           },
           {

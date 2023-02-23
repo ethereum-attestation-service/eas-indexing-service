@@ -22,6 +22,11 @@
   },
   {
     "inputs": [],
+    "name": "AlreadyRevokedOffchain",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "AlreadyTimestamped",
     "type": "error"
   },
@@ -123,7 +128,7 @@
       {
         "indexed": false,
         "internalType": "bytes32",
-        "name": "uuid",
+        "name": "uid",
         "type": "bytes32"
       },
       {
@@ -154,7 +159,7 @@
       {
         "indexed": false,
         "internalType": "bytes32",
-        "name": "uuid",
+        "name": "uid",
         "type": "bytes32"
       },
       {
@@ -165,6 +170,31 @@
       }
     ],
     "name": "Revoked",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "revoker",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "data",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "timestamp",
+        "type": "uint64"
+      }
+    ],
+    "name": "RevokedOffchain",
     "type": "event"
   },
   {
@@ -227,7 +257,7 @@
               },
               {
                 "internalType": "bytes32",
-                "name": "refUUID",
+                "name": "refUID",
                 "type": "bytes32"
               },
               {
@@ -290,7 +320,7 @@
               },
               {
                 "internalType": "bytes32",
-                "name": "refUUID",
+                "name": "refUID",
                 "type": "bytes32"
               },
               {
@@ -369,7 +399,7 @@
     "inputs": [
       {
         "internalType": "bytes32",
-        "name": "uuid",
+        "name": "uid",
         "type": "bytes32"
       }
     ],
@@ -379,7 +409,7 @@
         "components": [
           {
             "internalType": "bytes32",
-            "name": "uuid",
+            "name": "uid",
             "type": "bytes32"
           },
           {
@@ -404,7 +434,7 @@
           },
           {
             "internalType": "bytes32",
-            "name": "refUUID",
+            "name": "refUID",
             "type": "bytes32"
           },
           {
@@ -469,6 +499,30 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "revoker",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "data",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getRevokeOffchain",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "getRevokeTypeHash",
     "outputs": [
@@ -517,7 +571,7 @@
     "inputs": [
       {
         "internalType": "bytes32",
-        "name": "uuid",
+        "name": "uid",
         "type": "bytes32"
       }
     ],
@@ -560,7 +614,7 @@
               },
               {
                 "internalType": "bytes32",
-                "name": "refUUID",
+                "name": "refUID",
                 "type": "bytes32"
               },
               {
@@ -623,7 +677,7 @@
               },
               {
                 "internalType": "bytes32",
-                "name": "refUUID",
+                "name": "refUID",
                 "type": "bytes32"
               },
               {
@@ -698,7 +752,7 @@
             "components": [
               {
                 "internalType": "bytes32",
-                "name": "uuid",
+                "name": "uid",
                 "type": "bytes32"
               },
               {
@@ -735,7 +789,7 @@
             "components": [
               {
                 "internalType": "bytes32",
-                "name": "uuid",
+                "name": "uid",
                 "type": "bytes32"
               },
               {
@@ -794,6 +848,25 @@
         "type": "bytes32[]"
       }
     ],
+    "name": "multiRevokeOffchain",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "data",
+        "type": "bytes32[]"
+      }
+    ],
     "name": "multiTimestamp",
     "outputs": [
       {
@@ -818,7 +891,7 @@
             "components": [
               {
                 "internalType": "bytes32",
-                "name": "uuid",
+                "name": "uid",
                 "type": "bytes32"
               },
               {
@@ -855,7 +928,7 @@
             "components": [
               {
                 "internalType": "bytes32",
-                "name": "uuid",
+                "name": "uid",
                 "type": "bytes32"
               },
               {
@@ -904,6 +977,25 @@
     "name": "revokeByDelegation",
     "outputs": [],
     "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "data",
+        "type": "bytes32"
+      }
+    ],
+    "name": "revokeOffchain",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
