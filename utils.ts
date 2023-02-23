@@ -67,7 +67,7 @@ export const attestedEventSignature =
   "Attested(address,address,bytes32,bytes32)";
 export const registeredEventSignature = "Registered(bytes32,address)";
 export const timestampEventSignature = "Timestamped(bytes32,uint64)";
-export const schemaNameUUID =
+export const schemaNameUID =
   "0x44d562ac1d7cd77e232978687fea027ace48f719cf1d58c7888e509663bb87fc"; // Sepolia v0.25
 
 export const provider = new ethers.providers.JsonRpcProvider(
@@ -90,9 +90,9 @@ function timeout(ms: number) {
 export async function getFormattedAttestationFromLog(
   log: ethers.providers.Log
 ): Promise<Attestation> {
-  let UUID = ethers.constants.HashZero;
-  let schemaUUID = ethers.constants.HashZero;
-  let refUUID = ethers.constants.HashZero;
+  let UID = ethers.constants.HashZero;
+  let schemaUID = ethers.constants.HashZero;
+  let refUID = ethers.constants.HashZero;
   let time = ethers.BigNumber.from(0);
   let expirationTime = ethers.BigNumber.from(0);
   let revocationTime = ethers.BigNumber.from(0);
@@ -105,33 +105,33 @@ export async function getFormattedAttestationFromLog(
 
   do {
     [
-      UUID,
-      schemaUUID,
+      UID,
+      schemaUID,
       time,
       expirationTime,
       revocationTime,
-      refUUID,
+      refUID,
       recipient,
       attester,
       revocable,
       data,
     ] = await easContract.getAttestation(log.data);
 
-    if (UUID === ethers.constants.HashZero) {
+    if (UID === ethers.constants.HashZero) {
       console.log(`Delaying attestation poll after try #${tries}...`);
       await timeout(500);
     }
 
     tries++;
-  } while (UUID === ethers.constants.HashZero);
+  } while (UID === ethers.constants.HashZero);
 
   return {
-    id: UUID,
-    schemaId: schemaUUID,
+    id: UID,
+    schemaId: schemaUID,
     data,
     attester,
     recipient,
-    refUUID,
+    refUID: refUID,
     revocationTime: revocationTime.toString(),
     expirationTime: expirationTime.toString(),
     time: time.toString(),
@@ -147,7 +147,7 @@ export async function getFormattedAttestationFromLog(
 export async function getFormattedSchemaFromLog(
   log: ethers.providers.Log
 ): Promise<Omit<Schema, "index">> {
-  let UUID = ethers.constants.HashZero;
+  let UID = ethers.constants.HashZero;
   let resolver = ethers.constants.AddressZero;
   let revocable = false;
   let schema = "";
@@ -155,23 +155,23 @@ export async function getFormattedSchemaFromLog(
   let tries = 1;
 
   do {
-    [UUID, resolver, revocable, schema] = await schemaContract.getSchema(
+    [UID, resolver, revocable, schema] = await schemaContract.getSchema(
       log.topics[1]
     );
 
-    if (UUID === ethers.constants.HashZero) {
+    if (UID === ethers.constants.HashZero) {
       console.log(`Delaying schema poll after try #${tries}...`);
       await timeout(500);
     }
 
     tries++;
-  } while (UUID === ethers.constants.HashZero);
+  } while (UID === ethers.constants.HashZero);
 
   const block = await provider.getBlock(log.blockNumber);
   const tx = await provider.getTransaction(log.transactionHash);
 
   return {
-    id: UUID,
+    id: UID,
     schema: schema,
     creator: tx.from,
     resolver,
@@ -228,15 +228,15 @@ export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
 
 export async function createTimestampForLogs(logs: ethers.providers.Log[]) {
   for (let log of logs) {
-    const uuid = log.topics[1];
+    const uid = log.topics[1];
     const timestamp = ethers.BigNumber.from(log.topics[2]).toNumber();
-    console.log("Creating new Log for", uuid, timestamp);
+    console.log("Creating new Log for", uid, timestamp);
 
     const tx = await provider.getTransaction(log.transactionHash);
 
     await prisma.timestamp.create({
       data: {
-        id: uuid,
+        id: uid,
         timestamp,
         from: tx.from,
         txid: log.transactionHash,
@@ -248,7 +248,7 @@ export async function createTimestampForLogs(logs: ethers.providers.Log[]) {
 export async function processCreatedAttestation(
   attestation: Attestation
 ): Promise<void> {
-  if (attestation.schemaId === schemaNameUUID) {
+  if (attestation.schemaId === schemaNameUID) {
     try {
       const decodedNameAttestationData = ethers.utils.defaultAbiCoder.decode(
         ["bytes32", "string"],

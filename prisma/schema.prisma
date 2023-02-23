@@ -33,7 +33,7 @@ model Attestation {
   timeCreated    String
   expirationTime String
   revocationTime String
-  refUUID        String
+  refUID         String
   revocable      Boolean
   revoked        Boolean
   txid           String
