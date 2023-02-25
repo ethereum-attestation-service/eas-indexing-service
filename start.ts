@@ -13,9 +13,15 @@ import {
   timestampEventSignature,
   updateDbFromRelevantLog,
 } from "./utils";
+import { Eas__factory, EasSchema__factory } from "./types/ethers-contracts";
 
 require("dotenv").config();
+const schemaContract = EasSchema__factory.connect(
+  EASSchemaRegistryAddress,
+  provider
+);
 
+const easContract = Eas__factory.connect(EASContractAddress, provider);
 let running = false;
 
 export async function update() {
@@ -38,28 +44,28 @@ export async function update() {
 async function go() {
   await update();
 
-  const filterEAS = {
-    address: EASContractAddress,
-    topics: [
-      [
-        ethers.utils.id(registeredEventSignature),
-        ethers.utils.id(attestedEventSignature),
-        ethers.utils.id(revokedEventSignature),
-        ethers.utils.id(timestampEventSignature),
-      ],
-    ],
-  };
+  // easContract.filters.Attested.
 
-  const filterSchema = {
-    address: EASSchemaRegistryAddress,
-    topics: [[ethers.utils.id(registeredEventSignature)]],
-  };
+  // setInterval(async () => {
+  //   await go();
+  // }, 5000);
 
-  provider.on(filterEAS, async (log: ethers.providers.Log) => {
-    await updateDbFromRelevantLog(log);
-  });
+  // const filter: ethers.providers.EventType = {
+  //   topics: [
+  //     [
+  //       ethers.utils.id(registeredEventSignature),
+  //       ethers.utils.id(attestedEventSignature),
+  //       ethers.utils.id(revokedEventSignature),
+  //       ethers.utils.id(timestampEventSignature),
+  //     ],
+  //   ],
+  // };
+  //
+  // provider.on(filter, async (log: ethers.providers.Log) => {
+  //   await updateDbFromRelevantLog(log);
+  // });
 
-  provider.on(filterSchema, async (log: ethers.providers.Log) => {
+  easContract.on("Timestamped", async (log: ethers.providers.Log) => {
     await updateDbFromRelevantLog(log);
   });
 }
