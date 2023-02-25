@@ -407,6 +407,11 @@ async function getStartData(serviceStatPropertyName: string) {
   if (latestBlockNumServiceStat?.value) {
     fromBlock = Number(latestBlockNumServiceStat.value);
   }
+
+  if (fromBlock === 0) {
+    fromBlock = CONTRACT_START_BLOCK;
+  }
+
   return { latestBlockNumServiceStat, fromBlock };
 }
 
