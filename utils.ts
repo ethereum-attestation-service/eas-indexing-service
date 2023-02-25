@@ -81,7 +81,7 @@ export const timestampEventSignature = "Timestamped(bytes32,uint64)";
 export const schemaNameUID =
   "0x44d562ac1d7cd77e232978687fea027ace48f719cf1d58c7888e509663bb87fc"; // Sepolia v0.25
 
-export const provider = new ethers.providers.JsonRpcProvider(
+export const provider = new ethers.providers.StaticJsonRpcProvider(
   activeChainConfig.rpcProvider,
   activeChainConfig.chainName
 );
