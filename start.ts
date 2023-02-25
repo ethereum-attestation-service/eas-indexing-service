@@ -36,25 +36,23 @@ export async function update() {
 async function go() {
   await update();
 
-  const filter: ethers.providers.EventType = {
-    topics: [
-      [
-        ethers.utils.id(registeredEventSignature),
-        ethers.utils.id(attestedEventSignature),
-        ethers.utils.id(revokedEventSignature),
-        ethers.utils.id(timestampEventSignature),
-      ],
-    ],
-  };
+  setTimeout(go, 5000);
 
-  provider.on(filter, async (log: ethers.providers.Log) => {
-    console.log("Got log", log);
-    await updateDbFromRelevantLog(log);
-  });
-
-  provider.on("block", async (blockNumber: number) => {
-    console.log("Got block", blockNumber);
-  });
+  // const filter: ethers.providers.EventType = {
+  //   topics: [
+  //     [
+  //       ethers.utils.id(registeredEventSignature),
+  //       ethers.utils.id(attestedEventSignature),
+  //       ethers.utils.id(revokedEventSignature),
+  //       ethers.utils.id(timestampEventSignature),
+  //     ],
+  //   ],
+  // };
+  //
+  // provider.on(filter, async (log: ethers.providers.Log) => {
+  //   console.log("Got log", log);
+  //   await updateDbFromRelevantLog(log);
+  // });
 }
 
 go();
