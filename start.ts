@@ -1,12 +1,16 @@
-import {ethers} from "ethers";
+import { ethers } from "ethers";
 import {
   attestedEventSignature,
+  EASContractAddress,
+  EASSchemaRegistryAddress,
   getAndUpdateLatestAttestationRevocations,
   getAndUpdateLatestAttestations,
-  getAndUpdateLatestSchemas, getAndUpdateLatestTimestamps,
+  getAndUpdateLatestSchemas,
+  getAndUpdateLatestTimestamps,
   provider,
   registeredEventSignature,
-  revokedEventSignature, timestampEventSignature,
+  revokedEventSignature,
+  timestampEventSignature,
   updateDbFromRelevantLog,
 } from "./utils";
 
@@ -34,7 +38,8 @@ export async function update() {
 async function go() {
   await update();
 
-  const filter = {
+  const filterEAS = {
+    address: EASContractAddress,
     topics: [
       [
         ethers.utils.id(registeredEventSignature),
@@ -45,7 +50,16 @@ async function go() {
     ],
   };
 
-  provider.on(filter, async (log: ethers.providers.Log) => {
+  const filterSchema = {
+    address: EASSchemaRegistryAddress,
+    topics: [[ethers.utils.id(registeredEventSignature)]],
+  };
+
+  provider.on(filterEAS, async (log: ethers.providers.Log) => {
+    await updateDbFromRelevantLog(log);
+  });
+
+  provider.on(filterSchema, async (log: ethers.providers.Log) => {
     await updateDbFromRelevantLog(log);
   });
 }
