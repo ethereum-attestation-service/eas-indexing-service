@@ -36,10 +36,6 @@ export async function update() {
 async function go() {
   await update();
 
-  // setInterval(async () => {
-  //   await go();
-  // }, 5000);
-
   const filter: ethers.providers.EventType = {
     topics: [
       [
@@ -54,6 +50,10 @@ async function go() {
   provider.on(filter, async (log: ethers.providers.Log) => {
     console.log("Got log", log);
     await updateDbFromRelevantLog(log);
+  });
+
+  provider.on("block", async (blockNumber: number) => {
+    console.log("Got block", blockNumber);
   });
 }
 
