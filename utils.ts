@@ -52,12 +52,12 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
   {
     chainId: 42161,
     chainName: "arbitrum",
-    subdomain: "",
+    subdomain: "arbitrum.",
     version: "0.26",
-    contractAddress: "0x1a5650D0EcbCa349DD84bAFa85790E3e6955eb84",
-    schemaRegistryAddress: "0x7b24C7f8AF365B4E308b6acb0A7dfc85d034Cb3f",
-    etherscanURL: "https://sepolia.etherscan.io",
-    contractStartBlock: 62918460,
+    contractAddress: "0xbD75f629A22Dc1ceD33dDA0b68c546A1c035c458",
+    schemaRegistryAddress: "0xA310da9c5B885E7fb3fbA9D66E9Ba6Df512b78eB",
+    contractStartBlock: 64528380,
+    etherscanURL: "https://arbiscan.io",
     rpcProvider: "https://arb1.arbitrum.io/rpc",
   },
 ];
