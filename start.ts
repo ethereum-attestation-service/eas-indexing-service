@@ -36,7 +36,7 @@ export async function update() {
 async function go() {
   await update();
 
-  setTimeout(go, 5000);
+  setTimeout(go, 2000);
 
   // const filter: ethers.providers.EventType = {
   //   topics: [
