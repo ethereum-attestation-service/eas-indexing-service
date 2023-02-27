@@ -1,15 +1,8 @@
-import { ethers } from "ethers";
 import {
-  attestedEventSignature,
   getAndUpdateLatestAttestationRevocations,
   getAndUpdateLatestAttestations,
   getAndUpdateLatestSchemas,
   getAndUpdateLatestTimestamps,
-  provider,
-  registeredEventSignature,
-  revokedEventSignature,
-  timestampEventSignature,
-  updateDbFromRelevantLog,
 } from "./utils";
 
 require("dotenv").config();
@@ -37,22 +30,6 @@ async function go() {
   await update();
 
   setTimeout(go, 4000);
-
-  // const filter: ethers.providers.EventType = {
-  //   topics: [
-  //     [
-  //       ethers.utils.id(registeredEventSignature),
-  //       ethers.utils.id(attestedEventSignature),
-  //       ethers.utils.id(revokedEventSignature),
-  //       ethers.utils.id(timestampEventSignature),
-  //     ],
-  //   ],
-  // };
-  //
-  // provider.on(filter, async (log: ethers.providers.Log) => {
-  //   console.log("Got log", log);
-  //   await updateDbFromRelevantLog(log);
-  // });
 }
 
 go();
