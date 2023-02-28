@@ -58,7 +58,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     schemaRegistryAddress: "0xA310da9c5B885E7fb3fbA9D66E9Ba6Df512b78eB",
     contractStartBlock: 64528380,
     etherscanURL: "https://arbiscan.io",
-    rpcProvider: `https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    rpcProvider: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_ARBITRUM_API_KEY}`,
   },
 ];
 
@@ -81,7 +81,7 @@ export const timestampEventSignature = "Timestamped(bytes32,uint64)";
 export const schemaNameUID =
   "0x44d562ac1d7cd77e232978687fea027ace48f719cf1d58c7888e509663bb87fc"; // Sepolia v0.25
 
-export const provider = new ethers.providers.JsonRpcProvider(
+export const provider = new ethers.providers.StaticJsonRpcProvider(
   activeChainConfig.rpcProvider,
   activeChainConfig.chainName
 );

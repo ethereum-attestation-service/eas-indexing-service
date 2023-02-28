@@ -59,6 +59,12 @@ model Timestamp {
   timestamp Int
 }
 
+model EnsName {
+  id        String @id
+  name      String
+  timestamp Int
+}
+
 model ServiceStat {
   name  String @id
   value String
