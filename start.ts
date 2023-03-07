@@ -1,12 +1,16 @@
-import {ethers} from "ethers";
+import { ethers } from "ethers";
 import {
   attestedEventSignature,
   getAndUpdateLatestAttestationRevocations,
   getAndUpdateLatestAttestations,
-  getAndUpdateLatestSchemas, getAndUpdateLatestTimestamps,
+  getAndUpdateLatestOffchainRevocations,
+  getAndUpdateLatestSchemas,
+  getAndUpdateLatestTimestamps,
   provider,
   registeredEventSignature,
-  revokedEventSignature, timestampEventSignature,
+  revokedEventSignature,
+  revokedOffchainEventSignature,
+  timestampEventSignature,
   updateDbFromRelevantLog,
 } from "./utils";
 
@@ -25,6 +29,7 @@ export async function update() {
     await getAndUpdateLatestAttestations();
     await getAndUpdateLatestAttestationRevocations();
     await getAndUpdateLatestTimestamps();
+    await getAndUpdateLatestOffchainRevocations();
   } catch (e) {
     console.log("Error!", e);
   }
@@ -41,6 +46,7 @@ async function go() {
         ethers.utils.id(attestedEventSignature),
         ethers.utils.id(revokedEventSignature),
         ethers.utils.id(timestampEventSignature),
+        ethers.utils.id(revokedOffchainEventSignature),
       ],
     ],
   };

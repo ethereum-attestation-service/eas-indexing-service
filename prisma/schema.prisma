@@ -61,6 +61,14 @@ model Timestamp {
   timestamp Int
 }
 
+model OffchainRevocation {
+  id        String @id @default(cuid())
+  from      String
+  uid       String
+  txid      String
+  timestamp Int
+}
+
 model EnsName {
   id        String @id
   name      String
