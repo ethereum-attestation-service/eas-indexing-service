@@ -24,22 +24,24 @@ model Schema {
 }
 
 model Attestation {
-  id             String  @id
-  data           String
-  schema         Schema  @relation(fields: [schemaId], references: [id])
-  recipient      String
-  attester       String
-  time           String
-  timeCreated    String
-  expirationTime String
-  revocationTime String
-  refUID         String
-  revocable      Boolean
-  revoked        Boolean
-  txid           String
-  schemaId       String
-  ipfsHash       String
-  isOffchain     Boolean
+  id               String   @id
+  data             String
+  schema           Schema   @relation(fields: [schemaId], references: [id])
+  recipient        String
+  attester         String
+  time             String
+  timeCreated      String
+  expirationTime   String
+  revocationTime   String
+  refUID           String
+  revocable        Boolean
+  revoked          Boolean
+  txid             String
+  schemaId         String
+  ipfsHash         String
+  isOffchain       Boolean
+  recipientEnsName EnsName? @relation(fields: [recipient], references: [id], name: "recipientEnsName")
+  attesterEnsName  EnsName? @relation(fields: [attester], references: [id], name: "attesterEnsName")
 }
 
 model SchemaName {
@@ -57,6 +59,14 @@ model Timestamp {
   from      String
   txid      String
   timestamp Int
+}
+
+model EnsName {
+  id                   String        @id
+  name                 String
+  timestamp            Int
+  sentAttestations     Attestation[] @relation("attesterEnsName")
+  receivedAttestations Attestation[] @relation("recipientEnsName")
 }
 
 model ServiceStat {

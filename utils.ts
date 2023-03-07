@@ -47,7 +47,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     schemaRegistryAddress: "0x0a7E2Ff54e76B8E6659aedc9103FB21c038050D0",
     etherscanURL: "https://sepolia.etherscan.io",
     contractStartBlock: 2958570,
-    rpcProvider: "https://rpc.sepolia.org/",
+    rpcProvider: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
   },
   {
     chainId: 42161,
@@ -58,7 +58,18 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     schemaRegistryAddress: "0xA310da9c5B885E7fb3fbA9D66E9Ba6Df512b78eB",
     contractStartBlock: 64528380,
     etherscanURL: "https://arbiscan.io",
-    rpcProvider: `https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    rpcProvider: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_ARBITRUM_API_KEY}`,
+  },
+  {
+    chainId: 1,
+    chainName: "mainnet",
+    subdomain: "",
+    version: "0.26",
+    contractAddress: "0xA1207F3BBa224E2c9c3c6D5aF63D0eb1582Ce587",
+    schemaRegistryAddress: "0xA7b39296258348C78294F95B872b282326A97BDF",
+    contractStartBlock: 16756720,
+    etherscanURL: "https://etherscan.io",
+    rpcProvider: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
   },
 ];
 
