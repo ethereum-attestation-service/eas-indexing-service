@@ -30,6 +30,8 @@ export async function update() {
 
 async function go() {
   await update();
+
+  setTimeout(go, 4000);
 }
 
 go();
