@@ -1,6 +1,7 @@
 import {
   getAndUpdateLatestAttestationRevocations,
   getAndUpdateLatestAttestations,
+  getAndUpdateLatestOffchainRevocations,
   getAndUpdateLatestSchemas,
   getAndUpdateLatestTimestamps,
 } from "./utils";
@@ -20,6 +21,7 @@ export async function update() {
     await getAndUpdateLatestAttestations();
     await getAndUpdateLatestAttestationRevocations();
     await getAndUpdateLatestTimestamps();
+    await getAndUpdateLatestOffchainRevocations();
   } catch (e) {
     console.log("Error!", e);
   }
@@ -28,8 +30,6 @@ export async function update() {
 
 async function go() {
   await update();
-
-  setTimeout(go, 4000);
 }
 
 go();

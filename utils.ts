@@ -58,7 +58,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     schemaRegistryAddress: "0xA310da9c5B885E7fb3fbA9D66E9Ba6Df512b78eB",
     contractStartBlock: 64528380,
     etherscanURL: "https://arbiscan.io",
-    rpcProvider: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_ARBITRUM_API_KEY}`,
+    rpcProvider: `https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
   },
   {
     chainId: 1,
@@ -85,6 +85,8 @@ export const EASContractAddress = activeChainConfig.contractAddress;
 export const EASSchemaRegistryAddress = activeChainConfig.schemaRegistryAddress;
 export const CONTRACT_START_BLOCK = activeChainConfig.contractStartBlock;
 export const revokedEventSignature = "Revoked(address,address,bytes32,bytes32)";
+export const revokedOffchainEventSignature =
+  "RevokedOffchain(address,bytes32,uint64)";
 export const attestedEventSignature =
   "Attested(address,address,bytes32,bytes32)";
 export const registeredEventSignature = "Registered(bytes32,address)";
@@ -248,6 +250,35 @@ export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
   }
 }
 
+export async function createOffchainRevocationsForLogs(
+  logs: ethers.providers.Log[]
+) {
+  for (let log of logs) {
+    const uid = log.topics[2];
+    const timestamp = ethers.BigNumber.from(log.topics[3]).toNumber();
+    console.log("Creating new offchainrevoke Log for", uid, timestamp);
+
+    const tx = await provider.getTransaction(log.transactionHash);
+
+    const newRevocation = await prisma.offchainRevocation.create({
+      data: {
+        timestamp,
+        uid,
+        from: tx.from,
+        txid: log.transactionHash,
+      },
+    });
+
+    await prisma.attestation.updateMany({
+      where: { id: uid, isOffchain: true, attester: tx.from },
+      data: {
+        revoked: true,
+        revocationTime: newRevocation.timestamp.toString(),
+      },
+    });
+  }
+}
+
 export async function createTimestampForLogs(logs: ethers.providers.Log[]) {
   for (let log of logs) {
     const uid = log.topics[1];
@@ -380,6 +411,34 @@ export async function getAndUpdateLatestTimestamps() {
   console.log(`New Timestamps: ${logs.length}`);
 }
 
+export async function getAndUpdateLatestOffchainRevocations() {
+  const serviceStatPropertyName = "latestOffchainRevocationBlockNum";
+
+  const { latestBlockNumServiceStat, fromBlock } = await getStartData(
+    serviceStatPropertyName
+  );
+
+  console.log(`Offchain revocation update starting from block ${fromBlock}`);
+
+  const logs = await provider.getLogs({
+    address: EASContractAddress,
+    fromBlock: fromBlock + 1,
+    topics: [ethers.utils.id(revokedOffchainEventSignature)],
+  });
+
+  await createOffchainRevocationsForLogs(logs);
+
+  const lastBlock = getLastBlockNumberFromLog(logs);
+
+  await updateServiceStatToLastBlock(
+    !latestBlockNumServiceStat,
+    serviceStatPropertyName,
+    lastBlock
+  );
+
+  console.log(`New Revocations Offchain: ${logs.length}`);
+}
+
 export async function getAndUpdateLatestAttestations() {
   const serviceStatPropertyName = "latestAttestationBlockNum";
 
@@ -488,6 +547,15 @@ export async function updateDbFromRelevantLog(log: ethers.providers.Log) {
       await updateServiceStatToLastBlock(
         false,
         "latestTimestampBlockNum",
+        log.blockNumber
+      );
+    } else if (
+      log.topics[0] === ethers.utils.id(revokedOffchainEventSignature)
+    ) {
+      await createOffchainRevocationsForLogs([log]);
+      await updateServiceStatToLastBlock(
+        false,
+        "latestOffchainRevocationBlockNum",
         log.blockNumber
       );
     }
