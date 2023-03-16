@@ -58,6 +58,7 @@ model Timestamp {
   id        String @id
   from      String
   txid      String
+  tree      String @default("")
   timestamp Int
 }
 
