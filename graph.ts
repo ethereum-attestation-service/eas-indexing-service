@@ -118,12 +118,12 @@ export async function startGraph() {
   const schema = await buildSchema({
     resolvers: resolvers,
     validate: false,
-    emitSchemaFile: true,
     authChecker: customAuthChecker,
   });
 
   const server = new ApolloServer({
     schema: schema,
+    cache: "bounded",
     context: () => ({ prisma }),
   });
 
