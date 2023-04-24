@@ -13,6 +13,7 @@ import {
   timestampEventSignature,
   updateDbFromRelevantLog,
 } from "./utils";
+import { startGraph } from "./graph";
 
 require("dotenv").config();
 
@@ -57,3 +58,4 @@ async function go() {
 }
 
 go();
+startGraph();

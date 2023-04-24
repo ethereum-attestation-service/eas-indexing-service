@@ -1,10 +1,17 @@
 {
   "compilerOptions": {
     "sourceMap": true,
+    "module": "commonjs",
     "outDir": "dist",
     "strict": true,
-    "lib": ["esnext"],
+    "lib": [
+      "es2018",
+      "esnext.asynciterable"
+    ],
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "target": "es2018"
   }
 }
