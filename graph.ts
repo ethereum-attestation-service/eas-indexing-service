@@ -6,7 +6,6 @@ import {
 } from "@generated/type-graphql";
 import { AuthChecker, Authorized, buildSchema } from "type-graphql";
 import { ApolloServer } from "apollo-server";
-import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-core";
 import { prisma } from "./db.server";
 
 const PORT = process.env.PORT || 4000;
@@ -125,7 +124,6 @@ export async function startGraph() {
     schema: schema,
     cache: "bounded",
     introspection: true,
-    plugins: [ApolloServerPluginLandingPageGraphQLPlayground()],
     context: () => ({ prisma }),
   });
 
