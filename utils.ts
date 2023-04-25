@@ -156,14 +156,14 @@ export async function getFormattedAttestationFromLog(
     attester,
     recipient,
     refUID: refUID,
-    revocationTime: revocationTime.toString(),
-    expirationTime: expirationTime.toString(),
-    time: time.toString(),
+    revocationTime: revocationTime.toNumber(),
+    expirationTime: expirationTime.toNumber(),
+    time: time.toNumber(),
     txid: log.transactionHash,
     revoked: revocationTime.lt(dayjs().unix()) && !revocationTime.isZero(),
     isOffchain: false,
     ipfsHash: "",
-    timeCreated: dayjs().unix().toString(),
+    timeCreated: dayjs().unix(),
     revocable,
   };
 }
@@ -199,7 +199,7 @@ export async function getFormattedSchemaFromLog(
     schema: schema,
     creator: tx.from,
     resolver,
-    time: block.timestamp.toString(),
+    time: block.timestamp,
     txid: log.transactionHash,
     revocable,
   };
@@ -212,7 +212,7 @@ export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
       where: { id: attestation[0] },
       data: {
         revoked: true,
-        revocationTime: attestation.revocationTime.toString(),
+        revocationTime: attestation.revocationTime.toNumber(),
       },
     });
   }
@@ -273,7 +273,7 @@ export async function createOffchainRevocationsForLogs(
       where: { id: uid, isOffchain: true, attester: tx.from },
       data: {
         revoked: true,
-        revocationTime: newRevocation.timestamp.toString(),
+        revocationTime: newRevocation.timestamp,
       },
     });
   }
@@ -323,7 +323,7 @@ export async function processCreatedAttestation(
         data: {
           name: decodedNameAttestationData[1],
           schemaId: schema.id,
-          time: dayjs().unix().toString(),
+          time: dayjs().unix(),
           attesterAddress: attestation.attester,
           isCreator:
             attestation.attester.toLowerCase() === schema.creator.toLowerCase(),

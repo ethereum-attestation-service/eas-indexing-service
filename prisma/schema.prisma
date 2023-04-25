@@ -22,7 +22,7 @@ model Schema {
   revocable    Boolean
   index        String
   txid         String
-  time         String
+  time         Int
   attestations Attestation[]
   schemaNames  SchemaName[]
 }
@@ -33,10 +33,10 @@ model Attestation {
   schema         Schema  @relation(fields: [schemaId], references: [id])
   recipient      String
   attester       String
-  time           String
-  timeCreated    String
-  expirationTime String
-  revocationTime String
+  time           Int
+  timeCreated    Int
+  expirationTime Int
+  revocationTime Int
   refUID         String
   revocable      Boolean
   revoked        Boolean
@@ -54,7 +54,7 @@ model SchemaName {
   schema          Schema  @relation(fields: [schemaId], references: [id])
   attesterAddress String
   name            String
-  time            String
+  time            Int
   isCreator       Boolean
 }
 
