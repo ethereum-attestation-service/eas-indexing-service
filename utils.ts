@@ -71,6 +71,17 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     etherscanURL: "https://etherscan.io",
     rpcProvider: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
   },
+  {
+    chainId: 420,
+    chainName: "optimism-goerli",
+    subdomain: "optimism-goerli",
+    version: "0.27",
+    contractAddress: "0x1a5650D0EcbCa349DD84bAFa85790E3e6955eb84",
+    schemaRegistryAddress: "0x7b24C7f8AF365B4E308b6acb0A7dfc85d034Cb3f",
+    contractStartBlock: 8513369,
+    etherscanURL: "https://goerli-optimism.etherscan.io/",
+    rpcProvider: `https://opt-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_OPTIMISM_GOERLI_API_KEY}`,
+  },
 ];
 
 const activeChainConfig = EAS_CHAIN_CONFIGS.find(
