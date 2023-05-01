@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgresPassword
+      POSTGRES_DB: eas-index
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432"
+
+  eas-indexer:
+    image: eas-indexer:latest
+    container_name: eas_indexer_container
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgresPassword@postgres:5432/eas-index"
+    depends_on:
+      - postgres
+    ports:
+      - "4000:4000"
+
+volumes:
+  postgres_data:

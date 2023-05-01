@@ -8,7 +8,7 @@ import { AuthChecker, Authorized, buildSchema } from "type-graphql";
 import { ApolloServer } from "apollo-server";
 import { prisma } from "./db.server";
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.GRAPH_PORT || 4000;
 
 export async function startGraph() {
   const resolversEnhanceMap: ResolversEnhanceMap = {
