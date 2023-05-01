@@ -17,11 +17,25 @@ services:
     image: eas-indexer:latest
     container_name: eas_indexer_container
     environment:
+      CHAIN_ID: "1"
       DATABASE_URL: "postgresql://postgres:postgresPassword@postgres:5432/eas-index"
     depends_on:
       - postgres
     ports:
       - "4000:4000"
+
+  eas-explorer:
+    image: eas-explorer:latest
+    container_name: eas_explorer_container
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgresPassword@postgres:5432/eas-index"
+      CHAIN_ID: "1"
+      INFURA_API_KEY: "7beca79f4be84480b5557a579b1016dc"
+    depends_on:
+      - postgres
+      - eas-indexer
+    ports:
+      - "3000:3000"
 
 volumes:
   postgres_data:
