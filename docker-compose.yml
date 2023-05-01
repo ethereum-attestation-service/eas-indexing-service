@@ -1,9 +1,9 @@
 version: "3.9"
 
 services:
-  postgres:
+  eas-postgres:
     image: postgres:latest
-    container_name: postgres
+    container_name: eas-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgresPassword
@@ -14,13 +14,13 @@ services:
       - "5432"
 
   eas-indexer:
-    image: eas-indexer:latest
+    build: .
     container_name: eas_indexer_container
     environment:
-      CHAIN_ID: "1"
-      DATABASE_URL: "postgresql://postgres:postgresPassword@postgres:5432/eas-index"
+      CHAIN_ID: ${CHAIN_ID}
+      DATABASE_URL: "postgresql://postgres:postgresPassword@eas-postgres:5432/eas-index"
     depends_on:
-      - postgres
+      - eas-postgres
     ports:
       - "4000:4000"
 
@@ -28,14 +28,14 @@ services:
     image: eas-explorer:latest
     container_name: eas_explorer_container
     environment:
-      DATABASE_URL: "postgresql://postgres:postgresPassword@postgres:5432/eas-index"
-      CHAIN_ID: "1"
-      INFURA_API_KEY: "7beca79f4be84480b5557a579b1016dc"
+      DATABASE_URL: "postgresql://postgres:postgresPassword@eas-postgres:5432/eas-index"
+      CHAIN_ID: ${CHAIN_ID}
+      INFURA_API_KEY: ${INFURA_API_KEY}
     depends_on:
-      - postgres
+      - eas-postgres
       - eas-indexer
     ports:
-      - "3000:3000"
+      - "3000:8080"
 
 volumes:
   postgres_data:
