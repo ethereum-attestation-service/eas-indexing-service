@@ -4,6 +4,7 @@ import { Attestation, Schema } from "@prisma/client";
 import dayjs from "dayjs";
 import pLimit from "p-limit";
 import { Eas__factory, EasSchema__factory } from "./types/ethers-contracts";
+import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 
 const limit = pLimit(5);
 
@@ -160,6 +161,19 @@ export async function getFormattedAttestationFromLog(
     tries++;
   } while (UID === ethers.constants.HashZero);
 
+  let decodedDataJson = "";
+
+  try {
+    const schema = await prisma.schema.findUnique({
+      where: { id: schemaUID },
+    });
+
+    const schemaEncoder = new SchemaEncoder(schema!.schema);
+    decodedDataJson = JSON.stringify(schemaEncoder.decodeData(data));
+  } catch (error) {
+    console.log("Error decoding data 53432", error);
+  }
+
   return {
     id: UID,
     schemaId: schemaUID,
@@ -176,6 +190,7 @@ export async function getFormattedAttestationFromLog(
     ipfsHash: "",
     timeCreated: dayjs().unix(),
     revocable,
+    decodedDataJson,
   };
 }
 
