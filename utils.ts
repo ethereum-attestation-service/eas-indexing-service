@@ -4,6 +4,7 @@ import { Attestation, Schema } from "@prisma/client";
 import dayjs from "dayjs";
 import pLimit from "p-limit";
 import { Eas__factory, EasSchema__factory } from "./types/ethers-contracts";
+import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 
 const limit = pLimit(5);
 
@@ -70,6 +71,17 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     contractStartBlock: 16756720,
     etherscanURL: "https://etherscan.io",
     rpcProvider: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+  },
+  {
+    chainId: 420,
+    chainName: "optimism-goerli",
+    subdomain: "optimism-goerli",
+    version: "0.27",
+    contractAddress: "0x1a5650D0EcbCa349DD84bAFa85790E3e6955eb84",
+    schemaRegistryAddress: "0x7b24C7f8AF365B4E308b6acb0A7dfc85d034Cb3f",
+    contractStartBlock: 8513369,
+    etherscanURL: "https://goerli-optimism.etherscan.io/",
+    rpcProvider: `https://opt-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_OPTIMISM_GOERLI_API_KEY}`,
   },
 ];
 
@@ -149,6 +161,19 @@ export async function getFormattedAttestationFromLog(
     tries++;
   } while (UID === ethers.constants.HashZero);
 
+  let decodedDataJson = "";
+
+  try {
+    const schema = await prisma.schema.findUnique({
+      where: { id: schemaUID },
+    });
+
+    const schemaEncoder = new SchemaEncoder(schema!.schema);
+    decodedDataJson = JSON.stringify(schemaEncoder.decodeData(data));
+  } catch (error) {
+    console.log("Error decoding data 53432", error);
+  }
+
   return {
     id: UID,
     schemaId: schemaUID,
@@ -156,15 +181,16 @@ export async function getFormattedAttestationFromLog(
     attester,
     recipient,
     refUID: refUID,
-    revocationTime: revocationTime.toString(),
-    expirationTime: expirationTime.toString(),
-    time: time.toString(),
+    revocationTime: revocationTime.toNumber(),
+    expirationTime: expirationTime.toNumber(),
+    time: time.toNumber(),
     txid: log.transactionHash,
     revoked: revocationTime.lt(dayjs().unix()) && !revocationTime.isZero(),
     isOffchain: false,
     ipfsHash: "",
-    timeCreated: dayjs().unix().toString(),
+    timeCreated: dayjs().unix(),
     revocable,
+    decodedDataJson,
   };
 }
 
@@ -199,7 +225,7 @@ export async function getFormattedSchemaFromLog(
     schema: schema,
     creator: tx.from,
     resolver,
-    time: block.timestamp.toString(),
+    time: block.timestamp,
     txid: log.transactionHash,
     revocable,
   };
@@ -212,7 +238,7 @@ export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
       where: { id: attestation[0] },
       data: {
         revoked: true,
-        revocationTime: attestation.revocationTime.toString(),
+        revocationTime: attestation.revocationTime.toNumber(),
       },
     });
   }
@@ -273,7 +299,7 @@ export async function createOffchainRevocationsForLogs(
       where: { id: uid, isOffchain: true, attester: tx.from },
       data: {
         revoked: true,
-        revocationTime: newRevocation.timestamp.toString(),
+        revocationTime: newRevocation.timestamp,
       },
     });
   }
@@ -323,7 +349,7 @@ export async function processCreatedAttestation(
         data: {
           name: decodedNameAttestationData[1],
           schemaId: schema.id,
-          time: dayjs().unix().toString(),
+          time: dayjs().unix(),
           attesterAddress: attestation.attester,
           isCreator:
             attestation.attester.toLowerCase() === schema.creator.toLowerCase(),

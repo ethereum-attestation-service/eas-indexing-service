@@ -5,6 +5,7 @@ import {
   getAndUpdateLatestSchemas,
   getAndUpdateLatestTimestamps,
 } from "./utils";
+import { startGraph } from "./graph";
 
 require("dotenv").config();
 
@@ -35,3 +36,4 @@ async function go() {
 }
 
 go();
+startGraph();

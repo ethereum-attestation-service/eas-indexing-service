@@ -5,6 +5,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator typegraphql {
+  provider = "typegraphql-prisma"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -18,28 +22,29 @@ model Schema {
   revocable    Boolean
   index        String
   txid         String
-  time         String
+  time         Int
   attestations Attestation[]
   schemaNames  SchemaName[]
 }
 
 model Attestation {
-  id             String  @id
-  data           String
-  schema         Schema  @relation(fields: [schemaId], references: [id])
-  recipient      String
-  attester       String
-  time           String
-  timeCreated    String
-  expirationTime String
-  revocationTime String
-  refUID         String
-  revocable      Boolean
-  revoked        Boolean
-  txid           String
-  schemaId       String
-  ipfsHash       String
-  isOffchain     Boolean
+  id              String  @id
+  data            String
+  decodedDataJson String  @default("")
+  schema          Schema  @relation(fields: [schemaId], references: [id])
+  recipient       String
+  attester        String
+  time            Int
+  timeCreated     Int
+  expirationTime  Int
+  revocationTime  Int
+  refUID          String
+  revocable       Boolean
+  revoked         Boolean
+  txid            String
+  schemaId        String
+  ipfsHash        String
+  isOffchain      Boolean
   // recipientEnsName EnsName? @relation(fields: [recipient], references: [id], name: "recipientEnsName")
   // attesterEnsName  EnsName? @relation(fields: [attester], references: [id], name: "attesterEnsName")
 }
@@ -50,7 +55,7 @@ model SchemaName {
   schema          Schema  @relation(fields: [schemaId], references: [id])
   attesterAddress String
   name            String
-  time            String
+  time            Int
   isCreator       Boolean
 }
 
