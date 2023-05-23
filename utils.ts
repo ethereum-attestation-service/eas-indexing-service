@@ -119,7 +119,7 @@ export const schemaNameUID =
 
 export const provider = new ethers.providers.StaticJsonRpcProvider(
   activeChainConfig.rpcProvider,
-  activeChainConfig.chainName
+  activeChainConfig.chainId
 );
 
 const schemaContract = EasSchema__factory.connect(
