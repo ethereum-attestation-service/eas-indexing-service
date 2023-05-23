@@ -75,13 +75,24 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
   {
     chainId: 420,
     chainName: "optimism-goerli",
-    subdomain: "optimism-goerli",
+    subdomain: "optimism-goerli.",
     version: "0.27",
     contractAddress: "0x1a5650D0EcbCa349DD84bAFa85790E3e6955eb84",
     schemaRegistryAddress: "0x7b24C7f8AF365B4E308b6acb0A7dfc85d034Cb3f",
     contractStartBlock: 8513369,
     etherscanURL: "https://goerli-optimism.etherscan.io/",
     rpcProvider: `https://opt-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_OPTIMISM_GOERLI_API_KEY}`,
+  },
+  {
+    chainId: 84531,
+    chainName: "base-goerli",
+    subdomain: "base-goerli.",
+    version: "0.27",
+    contractAddress: "0xAcfE09Fd03f7812F022FBf636700AdEA18Fd2A7A",
+    schemaRegistryAddress: "0x720c2bA66D19A725143FBf5fDC5b4ADA2742682E",
+    contractStartBlock: 4843430,
+    etherscanURL: "https://goerli.basescan.org/",
+    rpcProvider: `https://goerli.base.org`,
   },
 ];
 
