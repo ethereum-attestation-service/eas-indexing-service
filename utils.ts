@@ -262,12 +262,14 @@ export async function createSchemasFromLogs(logs: ethers.providers.Log[]) {
 
   const schemas = await Promise.all(promises);
 
+  let schemaCount = await prisma.schema.count();
+
   for (let schema of schemas) {
-    const schemaCount = await prisma.schema.count();
+    schemaCount++;
 
     console.log("Creating new schema", schema);
     await prisma.schema.create({
-      data: { ...schema, index: (schemaCount + 1).toString() },
+      data: { ...schema, index: schemaCount.toString() },
     });
   }
 }
