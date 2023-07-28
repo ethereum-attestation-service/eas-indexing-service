@@ -205,6 +205,25 @@ export async function getFormattedAttestationFromLog(
     decodedDataJson = JSON.stringify(schemaEncoder.decodeData(data));
   } catch (error) {
     console.log("Error decoding data 53432", error);
+
+    return {
+      id: UID,
+      schemaId: schemaUID,
+      data,
+      attester,
+      recipient,
+      refUID: refUID,
+      revocationTime: revocationTime.toNumber(),
+      expirationTime: expirationTime.toNumber(),
+      time: time.toNumber(),
+      txid: log.transactionHash,
+      revoked: revocationTime.lt(dayjs().unix()) && !revocationTime.isZero(),
+      isOffchain: false,
+      ipfsHash: "",
+      timeCreated: dayjs().unix(),
+      revocable,
+      decodedDataJson: "",
+    };
   }
 
   return {
