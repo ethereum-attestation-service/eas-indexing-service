@@ -103,7 +103,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     schemaRegistryAddress: "0x4200000000000000000000000000000000000020",
     contractStartBlock: 1001245,
     etherscanURL: "https://goerli-optimism.etherscan.io/",
-    rpcProvider: `https://opt-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_OPTIMISM_GOERLI_API_KEY}`,
+    rpcProvider: `https://opt-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_OPTIMISM_API_KEY}`,
   },
   {
     chainId: 84531,
