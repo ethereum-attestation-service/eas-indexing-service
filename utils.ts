@@ -158,7 +158,7 @@ function timeout(ms: number) {
 
 export async function getFormattedAttestationFromLog(
   log: ethers.providers.Log
-): Promise<Attestation> {
+): Promise<Attestation | null> {
   let UID = ethers.constants.HashZero;
   let schemaUID = ethers.constants.HashZero;
   let refUID = ethers.constants.HashZero;
@@ -201,29 +201,14 @@ export async function getFormattedAttestationFromLog(
       where: { id: schemaUID },
     });
 
-    const schemaEncoder = new SchemaEncoder(schema!.schema);
+    if (!schema) {
+      return null;
+    }
+
+    const schemaEncoder = new SchemaEncoder(schema.schema);
     decodedDataJson = JSON.stringify(schemaEncoder.decodeData(data));
   } catch (error) {
     console.log("Error decoding data 53432", error);
-
-    return {
-      id: UID,
-      schemaId: schemaUID,
-      data,
-      attester,
-      recipient,
-      refUID: refUID,
-      revocationTime: revocationTime.toNumber(),
-      expirationTime: expirationTime.toNumber(),
-      time: time.toNumber(),
-      txid: log.transactionHash,
-      revoked: revocationTime.lt(dayjs().unix()) && !revocationTime.isZero(),
-      isOffchain: false,
-      ipfsHash: "",
-      timeCreated: dayjs().unix(),
-      revocable,
-      decodedDataJson: "",
-    };
   }
 
   return {
@@ -323,10 +308,12 @@ export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
   const attestations = await Promise.all(promises);
 
   for (let attestation of attestations) {
-    console.log("Creating new attestation", attestation);
+    if (attestation !== null) {
+      console.log("Creating new attestation", attestation);
 
-    await prisma.attestation.create({ data: attestation });
-    await processCreatedAttestation(attestation);
+      await prisma.attestation.create({ data: attestation });
+      await processCreatedAttestation(attestation);
+    }
   }
 }
 
