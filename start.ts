@@ -1,11 +1,19 @@
 import {
+  attestedEventSignature,
   getAndUpdateLatestAttestationRevocations,
   getAndUpdateLatestAttestations,
   getAndUpdateLatestOffchainRevocations,
   getAndUpdateLatestSchemas,
   getAndUpdateLatestTimestamps,
+  provider,
+  registeredEventSignature,
+  revokedEventSignature,
+  revokedOffchainEventSignature,
+  timestampEventSignature,
+  updateDbFromRelevantLog,
 } from "./utils";
 import { startGraph } from "./graph";
+import { ethers } from "ethers";
 
 require("dotenv").config();
 
@@ -31,6 +39,22 @@ export async function update() {
 
 async function go() {
   await update();
+
+  const filter = {
+    topics: [
+      [
+        ethers.utils.id(registeredEventSignature),
+        ethers.utils.id(attestedEventSignature),
+        ethers.utils.id(revokedEventSignature),
+        ethers.utils.id(timestampEventSignature),
+        ethers.utils.id(revokedOffchainEventSignature),
+      ],
+    ],
+  };
+
+  provider.on(filter, async (log: ethers.providers.Log) => {
+    go();
+  });
 
   setTimeout(go, 4000);
 }
