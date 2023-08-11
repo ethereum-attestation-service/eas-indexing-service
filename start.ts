@@ -39,23 +39,23 @@ export async function update() {
 
 async function go() {
   await update();
-
-  const filter = {
-    topics: [
-      [
-        ethers.utils.id(registeredEventSignature),
-        ethers.utils.id(attestedEventSignature),
-        ethers.utils.id(revokedEventSignature),
-        ethers.utils.id(timestampEventSignature),
-        ethers.utils.id(revokedOffchainEventSignature),
-      ],
-    ],
-  };
-
-  provider.on(filter, async (log: ethers.providers.Log) => {
-    go();
-  });
 }
+
+const filter = {
+  topics: [
+    [
+      ethers.utils.id(registeredEventSignature),
+      ethers.utils.id(attestedEventSignature),
+      ethers.utils.id(revokedEventSignature),
+      ethers.utils.id(timestampEventSignature),
+      ethers.utils.id(revokedOffchainEventSignature),
+    ],
+  ],
+};
+
+provider.on(filter, async (log: ethers.providers.Log) => {
+  go();
+});
 
 go();
 startGraph();
