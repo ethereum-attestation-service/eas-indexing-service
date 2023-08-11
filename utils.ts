@@ -562,5 +562,5 @@ export async function getAndUpdateAllRelevantLogs() {
     highestBlock
   );
 
-  console.log("total  logs", easLogs.length);
+  console.log("total  logs", easLogs.length + schemaLogs.length);
 }
