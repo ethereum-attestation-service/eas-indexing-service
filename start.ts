@@ -45,7 +45,7 @@ function setGoTimeout() {
   timeout = setTimeout(() => {
     console.log("Timeout occurred, calling go function");
     go();
-  }, 20000);
+  }, 60000);
 }
 async function go() {
   await update();
