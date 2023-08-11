@@ -64,8 +64,10 @@ const filter = {
 };
 
 provider.on(filter, async (log: ethers.providers.Log) => {
+  setGoTimeout();
   go();
 });
 
 go();
+setGoTimeout();
 startGraph();
