@@ -652,6 +652,8 @@ export async function getAndUpdateAllRelevantLogs() {
 
   const { fromBlock } = await getStartData(serviceStatPropertyName);
 
+  console.log("Getting and updating all relevant logs from block", fromBlock);
+
   // Get the latest block number
   const latestBlock = await provider.getBlockNumber();
 
@@ -677,4 +679,6 @@ export async function getAndUpdateAllRelevantLogs() {
   for (const log of schemaLogs) {
     await updateDbFromRelevantLog(log);
   }
+
+  console.log("total  logs", easLogs.length);
 }
