@@ -55,8 +55,6 @@ async function go() {
   provider.on(filter, async (log: ethers.providers.Log) => {
     go();
   });
-
-  setTimeout(go, 4000);
 }
 
 go();
