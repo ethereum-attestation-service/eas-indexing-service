@@ -161,7 +161,9 @@ const safeToNumber = (num: ethers.BigNumber) => {
     return num.toNumber();
   } catch (error) {
     console.log("Error converting to number", error);
-    return 0;
+
+    // return max number
+    return 2147483647;
   }
 };
 
