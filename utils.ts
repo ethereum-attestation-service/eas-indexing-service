@@ -156,6 +156,15 @@ function timeout(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const safeToNumber = (num: ethers.BigNumber) => {
+  try {
+    return num.toNumber();
+  } catch (error) {
+    console.log("Error converting to number", error);
+    return 0;
+  }
+};
+
 export async function getFormattedAttestationFromLog(
   log: ethers.providers.Log
 ): Promise<Attestation | null> {
@@ -218,8 +227,8 @@ export async function getFormattedAttestationFromLog(
     attester,
     recipient,
     refUID: refUID,
-    revocationTime: revocationTime.toNumber(),
-    expirationTime: expirationTime.toNumber(),
+    revocationTime: safeToNumber(revocationTime),
+    expirationTime: safeToNumber(expirationTime),
     time: time.toNumber(),
     txid: log.transactionHash,
     revoked: revocationTime.lt(dayjs().unix()) && !revocationTime.isZero(),
