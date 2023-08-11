@@ -41,6 +41,7 @@ function setGoTimeout() {
 }
 async function go() {
   await update();
+  setGoTimeout();
 }
 
 const filter = {
@@ -56,7 +57,6 @@ const filter = {
 };
 
 provider.on(filter, async (log: ethers.providers.Log) => {
-  setGoTimeout();
   go();
 });
 
