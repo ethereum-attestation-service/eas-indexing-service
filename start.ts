@@ -14,6 +14,9 @@ require("dotenv").config();
 
 let running = false;
 let timeout: NodeJS.Timeout | null = null;
+const POLLING_INTERVAL = process.env.POLLING_INTERVAL
+  ? Number(process.env.POLLING_INTERVAL)
+  : 60000;
 
 export async function update() {
   if (running) {
@@ -37,7 +40,7 @@ function setGoTimeout() {
   timeout = setTimeout(() => {
     console.log("Timeout occurred, calling go function");
     go();
-  }, 60000);
+  }, POLLING_INTERVAL);
 }
 async function go() {
   await update();
