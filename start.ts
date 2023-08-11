@@ -10,7 +10,6 @@ import {
   revokedEventSignature,
   revokedOffchainEventSignature,
   timestampEventSignature,
-  updateDbFromRelevantLog,
 } from "./utils";
 import { startGraph } from "./graph";
 import { ethers } from "ethers";
@@ -18,6 +17,7 @@ import { ethers } from "ethers";
 require("dotenv").config();
 
 let running = false;
+let timeout: NodeJS.Timeout | null = null;
 
 export async function update() {
   if (running) {
@@ -37,6 +37,16 @@ export async function update() {
   running = false;
 }
 
+function setGoTimeout() {
+  if (timeout) {
+    clearTimeout(timeout);
+  }
+
+  timeout = setTimeout(() => {
+    console.log("Timeout occurred, calling go function");
+    go();
+  }, 20000);
+}
 async function go() {
   await update();
 }
