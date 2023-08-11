@@ -639,3 +639,42 @@ export async function updateDbFromRelevantLog(log: ethers.providers.Log) {
     }
   }
 }
+
+export async function getAndUpdateAllRelevantLogs() {
+  const eventSignatures = [
+    ethers.utils.id(revokedEventSignature),
+    ethers.utils.id(revokedOffchainEventSignature),
+    ethers.utils.id(attestedEventSignature),
+    ethers.utils.id(timestampEventSignature),
+  ];
+
+  const serviceStatPropertyName = "latestAttestationBlockNum";
+
+  const { fromBlock } = await getStartData(serviceStatPropertyName);
+
+  // Get the latest block number
+  const latestBlock = await provider.getBlockNumber();
+
+  // Get logs for all the event signatures
+  const easLogs = await provider.getLogs({
+    address: EASContractAddress,
+    fromBlock: fromBlock + 1,
+    toBlock: latestBlock,
+    topics: [eventSignatures], // Filter by all event signatures
+  });
+
+  for (const log of easLogs) {
+    await updateDbFromRelevantLog(log);
+  }
+
+  const schemaLogs = await provider.getLogs({
+    address: EASSchemaRegistryAddress,
+    fromBlock: fromBlock + 1,
+    toBlock: latestBlock,
+    topics: [ethers.utils.id(registeredEventSignature)],
+  });
+
+  for (const log of schemaLogs) {
+    await updateDbFromRelevantLog(log);
+  }
+}
