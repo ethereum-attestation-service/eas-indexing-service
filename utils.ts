@@ -419,7 +419,11 @@ export async function updateServiceStatToLastBlock(
   serviceStatPropertyName: string,
   lastBlock: number
 ) {
-  if (shouldCreate) {
+  const existing = await prisma.serviceStat.findFirst({
+    where: { name: serviceStatPropertyName },
+  });
+
+  if (!existing || shouldCreate) {
     await prisma.serviceStat.create({
       data: { name: serviceStatPropertyName, value: lastBlock.toString() },
     });
@@ -520,8 +524,18 @@ export async function getAndUpdateAllRelevantLogs() {
     topics: [eventSignatures], // Filter by all event signatures
   });
 
+  let highestBlock = fromBlock;
+
   for (const log of easLogs) {
     await updateDbFromRelevantLog(log);
+  }
+
+  if (easLogs.length) {
+    const lastBlock = getLastBlockNumberFromLog(easLogs);
+
+    if (lastBlock > highestBlock) {
+      highestBlock = lastBlock;
+    }
   }
 
   const schemaLogs = await provider.getLogs({
@@ -533,6 +547,20 @@ export async function getAndUpdateAllRelevantLogs() {
   for (const log of schemaLogs) {
     await updateDbFromRelevantLog(log);
   }
+
+  if (schemaLogs.length) {
+    const lastBlock = getLastBlockNumberFromLog(schemaLogs);
+
+    if (lastBlock > highestBlock) {
+      highestBlock = lastBlock;
+    }
+  }
+
+  await updateServiceStatToLastBlock(
+    false,
+    serviceStatPropertyName,
+    highestBlock
+  );
 
   console.log("total  logs", easLogs.length);
 }
