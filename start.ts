@@ -4,6 +4,7 @@ import {
   getAndUpdateLatestOffchainRevocations,
   getAndUpdateLatestSchemas,
   getAndUpdateLatestTimestamps,
+  provider,
 } from "./utils";
 import { startGraph } from "./graph";
 
@@ -32,7 +33,10 @@ export async function update() {
 async function go() {
   await update();
 
-  setTimeout(go, 4000);
+  // on every block from ethers provider
+  provider.on("block", async () => {
+    await update();
+  });
 }
 
 go();
