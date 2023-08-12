@@ -14,9 +14,12 @@ require("dotenv").config();
 
 let running = false;
 let timeout: NodeJS.Timeout | null = null;
+
 const POLLING_INTERVAL = process.env.POLLING_INTERVAL
   ? Number(process.env.POLLING_INTERVAL)
   : 60000;
+
+const DISABLE_LISTENER = process.env.DISABLE_LISTENER;
 
 export async function update() {
   if (running) {
@@ -59,9 +62,11 @@ const filter = {
   ],
 };
 
-provider.on(filter, async (log: ethers.providers.Log) => {
-  go();
-});
+if (!DISABLE_LISTENER) {
+  provider.on(filter, async (log: ethers.providers.Log) => {
+    go();
+  });
+}
 
 go();
 setGoTimeout();
