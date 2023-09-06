@@ -525,6 +525,10 @@ export async function getAndUpdateAllRelevantLogs() {
   while (currentBlock <= latestBlock) {
     const toBlock = Math.min(currentBlock + batchSize - 1, latestBlock);
 
+    console.log(
+      `Getting and updating all relevant logs from block ${currentBlock} to ${toBlock}`
+    );
+
     const easLogs = await provider.getLogs({
       address: EASContractAddress,
       fromBlock: currentBlock,
