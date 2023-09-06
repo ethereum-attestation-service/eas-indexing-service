@@ -1,23 +1,25 @@
-import { ethers } from "ethers";
 import {
   attestedEventSignature,
-  getAndUpdateLatestAttestationRevocations,
-  getAndUpdateLatestAttestations,
-  getAndUpdateLatestOffchainRevocations,
-  getAndUpdateLatestSchemas,
-  getAndUpdateLatestTimestamps,
+  getAndUpdateAllRelevantLogs,
   provider,
   registeredEventSignature,
   revokedEventSignature,
   revokedOffchainEventSignature,
   timestampEventSignature,
-  updateDbFromRelevantLog,
 } from "./utils";
 import { startGraph } from "./graph";
+import { ethers } from "ethers";
 
 require("dotenv").config();
 
 let running = false;
+let timeout: NodeJS.Timeout | null = null;
+
+const POLLING_INTERVAL = process.env.POLLING_INTERVAL
+  ? Number(process.env.POLLING_INTERVAL)
+  : 60000;
+
+const DISABLE_LISTENER = process.env.DISABLE_LISTENER;
 
 export async function update() {
   if (running) {
@@ -26,36 +28,46 @@ export async function update() {
 
   try {
     running = true;
-    await getAndUpdateLatestSchemas();
-    await getAndUpdateLatestAttestations();
-    await getAndUpdateLatestAttestationRevocations();
-    await getAndUpdateLatestTimestamps();
-    await getAndUpdateLatestOffchainRevocations();
+    await getAndUpdateAllRelevantLogs();
   } catch (e) {
     console.log("Error!", e);
   }
   running = false;
 }
 
+function setGoTimeout() {
+  if (timeout) {
+    clearTimeout(timeout);
+  }
+
+  timeout = setTimeout(() => {
+    console.log("Timeout occurred, calling go function");
+    go();
+  }, POLLING_INTERVAL);
+}
 async function go() {
   await update();
+  setGoTimeout();
+}
 
-  const filter = {
-    topics: [
-      [
-        ethers.utils.id(registeredEventSignature),
-        ethers.utils.id(attestedEventSignature),
-        ethers.utils.id(revokedEventSignature),
-        ethers.utils.id(timestampEventSignature),
-        ethers.utils.id(revokedOffchainEventSignature),
-      ],
+const filter = {
+  topics: [
+    [
+      ethers.utils.id(registeredEventSignature),
+      ethers.utils.id(attestedEventSignature),
+      ethers.utils.id(revokedEventSignature),
+      ethers.utils.id(timestampEventSignature),
+      ethers.utils.id(revokedOffchainEventSignature),
     ],
-  };
+  ],
+};
 
+if (!DISABLE_LISTENER) {
   provider.on(filter, async (log: ethers.providers.Log) => {
-    await updateDbFromRelevantLog(log);
+    go();
   });
 }
 
 go();
+setGoTimeout();
 startGraph();

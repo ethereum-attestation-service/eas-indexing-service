@@ -6,6 +6,10 @@ import pLimit from "p-limit";
 import { Eas__factory, EasSchema__factory } from "./types/ethers-contracts";
 import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 
+const batchSize = process.env.BATCH_SIZE
+  ? Number(process.env.BATCH_SIZE)
+  : 9500;
+
 const limit = pLimit(5);
 
 export type EASChainConfig = {
@@ -59,7 +63,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     schemaRegistryAddress: "0xA310da9c5B885E7fb3fbA9D66E9Ba6Df512b78eB",
     contractStartBlock: 64528380,
     etherscanURL: "https://arbiscan.io",
-    rpcProvider: `https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    rpcProvider: `https://ancient-white-arrow.arbitrum-mainnet.discover.quiknode.pro/${process.env.QUICKNODE_ARBITRUM_API_KEY}/`,
   },
   {
     chainId: 1,
@@ -414,40 +418,16 @@ export async function processCreatedAttestation(
   }
 }
 
-export async function getAndUpdateLatestAttestationRevocations() {
-  const serviceStatPropertyName = "latestAttestationRevocationBlockNum";
-
-  const { latestBlockNumServiceStat, fromBlock } = await getStartData(
-    serviceStatPropertyName
-  );
-
-  console.log(`Attestation revocation update starting from block ${fromBlock}`);
-
-  const logs = await provider.getLogs({
-    address: EASContractAddress,
-    fromBlock: fromBlock + 1,
-    topics: [ethers.utils.id(revokedEventSignature)],
-  });
-
-  await revokeAttestationsFromLogs(logs);
-
-  const lastBlock = getLastBlockNumberFromLog(logs);
-
-  await updateServiceStatToLastBlock(
-    !latestBlockNumServiceStat,
-    serviceStatPropertyName,
-    lastBlock
-  );
-
-  console.log(`New Attestation Revocations: ${logs.length}`);
-}
-
 export async function updateServiceStatToLastBlock(
   shouldCreate: boolean,
   serviceStatPropertyName: string,
   lastBlock: number
 ) {
-  if (shouldCreate) {
+  const existing = await prisma.serviceStat.findFirst({
+    where: { name: serviceStatPropertyName },
+  });
+
+  if (!existing || shouldCreate) {
     await prisma.serviceStat.create({
       data: { name: serviceStatPropertyName, value: lastBlock.toString() },
     });
@@ -459,90 +439,6 @@ export async function updateServiceStatToLastBlock(
       });
     }
   }
-}
-
-export async function getAndUpdateLatestTimestamps() {
-  const serviceStatPropertyName = "latestTimestampBlockNum";
-
-  const { latestBlockNumServiceStat, fromBlock } = await getStartData(
-    serviceStatPropertyName
-  );
-
-  console.log(`Timestamp update starting from block ${fromBlock}`);
-
-  const logs = await provider.getLogs({
-    address: EASContractAddress,
-    fromBlock: fromBlock + 1,
-    topics: [ethers.utils.id(timestampEventSignature)],
-  });
-
-  await createTimestampForLogs(logs);
-
-  const lastBlock = getLastBlockNumberFromLog(logs);
-
-  await updateServiceStatToLastBlock(
-    !latestBlockNumServiceStat,
-    serviceStatPropertyName,
-    lastBlock
-  );
-
-  console.log(`New Timestamps: ${logs.length}`);
-}
-
-export async function getAndUpdateLatestOffchainRevocations() {
-  const serviceStatPropertyName = "latestOffchainRevocationBlockNum";
-
-  const { latestBlockNumServiceStat, fromBlock } = await getStartData(
-    serviceStatPropertyName
-  );
-
-  console.log(`Offchain revocation update starting from block ${fromBlock}`);
-
-  const logs = await provider.getLogs({
-    address: EASContractAddress,
-    fromBlock: fromBlock + 1,
-    topics: [ethers.utils.id(revokedOffchainEventSignature)],
-  });
-
-  await createOffchainRevocationsForLogs(logs);
-
-  const lastBlock = getLastBlockNumberFromLog(logs);
-
-  await updateServiceStatToLastBlock(
-    !latestBlockNumServiceStat,
-    serviceStatPropertyName,
-    lastBlock
-  );
-
-  console.log(`New Revocations Offchain: ${logs.length}`);
-}
-
-export async function getAndUpdateLatestAttestations() {
-  const serviceStatPropertyName = "latestAttestationBlockNum";
-
-  const { latestBlockNumServiceStat, fromBlock } = await getStartData(
-    serviceStatPropertyName
-  );
-
-  console.log(`Attestation update starting from block ${fromBlock}`);
-
-  const logs = await provider.getLogs({
-    address: EASContractAddress,
-    fromBlock: fromBlock + 1,
-    topics: [ethers.utils.id(attestedEventSignature)],
-  });
-
-  await createAttestationsForLogs(logs);
-
-  const lastBlock = getLastBlockNumberFromLog(logs);
-
-  await updateServiceStatToLastBlock(
-    !latestBlockNumServiceStat,
-    serviceStatPropertyName,
-    lastBlock
-  );
-
-  console.log(`New Attestations: ${logs.length}`);
 }
 
 async function getStartData(serviceStatPropertyName: string) {
@@ -565,34 +461,6 @@ async function getStartData(serviceStatPropertyName: string) {
 
 export function getLastBlockNumberFromLog(logs: ethers.providers.Log[]) {
   return logs.length ? logs[logs.length - 1].blockNumber : 0;
-}
-
-export async function getAndUpdateLatestSchemas() {
-  const serviceStatPropertyName = "latestSchemaBlockNum";
-
-  const { latestBlockNumServiceStat, fromBlock } = await getStartData(
-    serviceStatPropertyName
-  );
-
-  console.log(`Schema update starting from block ${fromBlock}`);
-
-  const logs = await provider.getLogs({
-    address: EASSchemaRegistryAddress,
-    fromBlock: fromBlock + 1,
-    topics: [ethers.utils.id(registeredEventSignature)],
-  });
-
-  await createSchemasFromLogs(logs);
-
-  const lastBlock = getLastBlockNumberFromLog(logs);
-
-  await updateServiceStatToLastBlock(
-    !latestBlockNumServiceStat,
-    serviceStatPropertyName,
-    lastBlock
-  );
-
-  console.log(`New schemas: ${logs.length}`);
 }
 
 export async function updateDbFromRelevantLog(log: ethers.providers.Log) {
@@ -638,4 +506,66 @@ export async function updateDbFromRelevantLog(log: ethers.providers.Log) {
       );
     }
   }
+}
+
+export async function getAndUpdateAllRelevantLogs() {
+  const eventSignatures = [
+    ethers.utils.id(revokedEventSignature),
+    ethers.utils.id(revokedOffchainEventSignature),
+    ethers.utils.id(attestedEventSignature),
+    ethers.utils.id(timestampEventSignature),
+  ];
+
+  const serviceStatPropertyName = "latestAttestationBlockNum";
+
+  const { fromBlock } = await getStartData(serviceStatPropertyName);
+
+  let currentBlock = fromBlock + 1;
+  const latestBlock = await provider.getBlockNumber();
+
+  let allLogs: ethers.providers.Log[] = [];
+
+  while (currentBlock <= latestBlock) {
+    const toBlock = Math.min(currentBlock + batchSize - 1, latestBlock);
+
+    console.log(
+      `Getting and updating all relevant logs from block ${currentBlock} to ${toBlock}`
+    );
+
+    const easLogs = await provider.getLogs({
+      address: EASContractAddress,
+      fromBlock: currentBlock,
+      toBlock,
+      topics: [eventSignatures], // Filter by all event signatures
+    });
+
+    allLogs = allLogs.concat(easLogs);
+
+    for (const log of easLogs) {
+      await updateDbFromRelevantLog(log);
+    }
+
+    const schemaLogs = await provider.getLogs({
+      address: EASSchemaRegistryAddress,
+      fromBlock: currentBlock,
+      toBlock,
+      topics: [ethers.utils.id(registeredEventSignature)],
+    });
+
+    allLogs = allLogs.concat(schemaLogs);
+
+    for (const log of schemaLogs) {
+      await updateDbFromRelevantLog(log);
+    }
+
+    currentBlock += batchSize;
+  }
+
+  await updateServiceStatToLastBlock(
+    false,
+    serviceStatPropertyName,
+    latestBlock
+  );
+
+  console.log("total  logs", allLogs.length);
 }
