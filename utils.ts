@@ -6,7 +6,7 @@ import pLimit from "p-limit";
 import { Eas__factory, EasSchema__factory } from "./types/ethers-contracts";
 import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 
-const batchSize = 10000;
+const batchSize = 9500;
 const limit = pLimit(5);
 
 export type EASChainConfig = {
