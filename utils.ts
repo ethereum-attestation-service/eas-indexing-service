@@ -520,11 +520,6 @@ export async function getAndUpdateAllRelevantLogs() {
   let currentBlock = fromBlock + 1;
   const latestBlock = await provider.getBlockNumber();
 
-  console.log(
-    "Getting and updating all relevant logs from block",
-    currentBlock
-  );
-
   let allLogs: ethers.providers.Log[] = [];
 
   while (currentBlock <= latestBlock) {
@@ -555,6 +550,8 @@ export async function getAndUpdateAllRelevantLogs() {
     for (const log of schemaLogs) {
       await updateDbFromRelevantLog(log);
     }
+
+    currentBlock += batchSize;
   }
 
   await updateServiceStatToLastBlock(
