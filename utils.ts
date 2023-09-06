@@ -532,19 +532,6 @@ export async function getAndUpdateAllRelevantLogs() {
       `Getting and updating all relevant logs from block ${currentBlock} to ${toBlock}`
     );
 
-    const easLogs = await provider.getLogs({
-      address: EASContractAddress,
-      fromBlock: currentBlock,
-      toBlock,
-      topics: [eventSignatures], // Filter by all event signatures
-    });
-
-    allLogs = allLogs.concat(easLogs);
-
-    for (const log of easLogs) {
-      await updateDbFromRelevantLog(log);
-    }
-
     const schemaLogs = await provider.getLogs({
       address: EASSchemaRegistryAddress,
       fromBlock: currentBlock,
@@ -555,6 +542,19 @@ export async function getAndUpdateAllRelevantLogs() {
     allLogs = allLogs.concat(schemaLogs);
 
     for (const log of schemaLogs) {
+      await updateDbFromRelevantLog(log);
+    }
+
+    const easLogs = await provider.getLogs({
+      address: EASContractAddress,
+      fromBlock: currentBlock,
+      toBlock,
+      topics: [eventSignatures], // Filter by all event signatures
+    });
+
+    allLogs = allLogs.concat(easLogs);
+
+    for (const log of easLogs) {
       await updateDbFromRelevantLog(log);
     }
 
