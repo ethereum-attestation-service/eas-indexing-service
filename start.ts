@@ -2,7 +2,8 @@ import {
   attestedEventSignature,
   getAndUpdateAllRelevantLogs,
   provider,
-  registeredEventSignature,
+  registeredEventSignatureV1,
+  registeredEventSignatureV2,
   revokedEventSignature,
   revokedOffchainEventSignature,
   timestampEventSignature,
@@ -53,7 +54,8 @@ async function go() {
 const filter = {
   topics: [
     [
-      ethers.utils.id(registeredEventSignature),
+      ethers.utils.id(registeredEventSignatureV1),
+      ethers.utils.id(registeredEventSignatureV2),
       ethers.utils.id(attestedEventSignature),
       ethers.utils.id(revokedEventSignature),
       ethers.utils.id(timestampEventSignature),

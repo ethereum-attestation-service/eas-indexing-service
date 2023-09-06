@@ -149,7 +149,10 @@ export const revokedOffchainEventSignature =
   "RevokedOffchain(address,bytes32,uint64)";
 export const attestedEventSignature =
   "Attested(address,address,bytes32,bytes32)";
-export const registeredEventSignature = "Registered(bytes32,address)";
+export const registeredEventSignatureV1 = "Registered(bytes32,address)";
+export const registeredEventSignatureV2 =
+  "Registered(bytes32,address,(bytes32,address,bool,string))";
+
 export const timestampEventSignature = "Timestamped(bytes32,uint64)";
 export const schemaNameUID =
   "0x44d562ac1d7cd77e232978687fea027ace48f719cf1d58c7888e509663bb87fc"; // Sepolia v0.25
@@ -476,7 +479,10 @@ export function getLastBlockNumberFromLog(logs: ethers.providers.Log[]) {
 
 export async function updateDbFromRelevantLog(log: ethers.providers.Log) {
   if (log.address === EASSchemaRegistryAddress) {
-    if (log.topics[0] === ethers.utils.id(registeredEventSignature)) {
+    if (
+      log.topics[0] === ethers.utils.id(registeredEventSignatureV1) ||
+      log.topics[0] === ethers.utils.id(registeredEventSignatureV2)
+    ) {
       await createSchemasFromLogs([log]);
       await updateServiceStatToLastBlock(
         false,
@@ -547,7 +553,12 @@ export async function getAndUpdateAllRelevantLogs() {
       address: EASSchemaRegistryAddress,
       fromBlock: currentBlock,
       toBlock,
-      topics: [ethers.utils.id(registeredEventSignature)],
+      topics: [
+        [
+          ethers.utils.id(registeredEventSignatureV1),
+          ethers.utils.id(registeredEventSignatureV2),
+        ],
+      ],
     });
 
     allLogs = allLogs.concat(schemaLogs);
