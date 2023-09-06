@@ -59,7 +59,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     schemaRegistryAddress: "0xA310da9c5B885E7fb3fbA9D66E9Ba6Df512b78eB",
     contractStartBlock: 64528380,
     etherscanURL: "https://arbiscan.io",
-    rpcProvider: `https://rpc.ankr.com/arbitrum/${process.env.ANKR_ARBITRUM_API_KEY}`,
+    rpcProvider: `https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
   },
   {
     chainId: 1,
