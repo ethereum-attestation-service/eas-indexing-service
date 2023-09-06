@@ -544,7 +544,7 @@ export async function getAndUpdateAllRelevantLogs() {
 
     const schemaLogs = await provider.getLogs({
       address: EASSchemaRegistryAddress,
-      fromBlock: fromBlock + 1,
+      fromBlock: currentBlock,
       toBlock,
       topics: [ethers.utils.id(registeredEventSignature)],
     });
