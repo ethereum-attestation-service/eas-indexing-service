@@ -6,6 +6,7 @@ import pLimit from "p-limit";
 import { Eas__factory, EasSchema__factory } from "./types/ethers-contracts";
 import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 
+const batchSize = 10000;
 const limit = pLimit(5);
 
 export type EASChainConfig = {
@@ -516,51 +517,51 @@ export async function getAndUpdateAllRelevantLogs() {
 
   const { fromBlock } = await getStartData(serviceStatPropertyName);
 
-  console.log("Getting and updating all relevant logs from block", fromBlock);
+  let currentBlock = fromBlock + 1;
+  const latestBlock = await provider.getBlockNumber();
 
-  const easLogs = await provider.getLogs({
-    address: EASContractAddress,
-    fromBlock: fromBlock + 1,
-    topics: [eventSignatures], // Filter by all event signatures
-  });
+  console.log(
+    "Getting and updating all relevant logs from block",
+    currentBlock
+  );
 
-  let highestBlock = fromBlock;
+  let allLogs: ethers.providers.Log[] = [];
 
-  for (const log of easLogs) {
-    await updateDbFromRelevantLog(log);
-  }
+  while (currentBlock <= latestBlock) {
+    const toBlock = Math.min(currentBlock + batchSize - 1, latestBlock);
 
-  if (easLogs.length) {
-    const lastBlock = getLastBlockNumberFromLog(easLogs);
+    const easLogs = await provider.getLogs({
+      address: EASContractAddress,
+      fromBlock: currentBlock,
+      toBlock,
+      topics: [eventSignatures], // Filter by all event signatures
+    });
 
-    if (lastBlock > highestBlock) {
-      highestBlock = lastBlock;
+    allLogs = allLogs.concat(easLogs);
+
+    for (const log of easLogs) {
+      await updateDbFromRelevantLog(log);
     }
-  }
 
-  const schemaLogs = await provider.getLogs({
-    address: EASSchemaRegistryAddress,
-    fromBlock: fromBlock + 1,
-    topics: [ethers.utils.id(registeredEventSignature)],
-  });
+    const schemaLogs = await provider.getLogs({
+      address: EASSchemaRegistryAddress,
+      fromBlock: fromBlock + 1,
+      toBlock,
+      topics: [ethers.utils.id(registeredEventSignature)],
+    });
 
-  for (const log of schemaLogs) {
-    await updateDbFromRelevantLog(log);
-  }
+    allLogs = allLogs.concat(schemaLogs);
 
-  if (schemaLogs.length) {
-    const lastBlock = getLastBlockNumberFromLog(schemaLogs);
-
-    if (lastBlock > highestBlock) {
-      highestBlock = lastBlock;
+    for (const log of schemaLogs) {
+      await updateDbFromRelevantLog(log);
     }
   }
 
   await updateServiceStatToLastBlock(
     false,
     serviceStatPropertyName,
-    highestBlock
+    latestBlock
   );
 
-  console.log("total  logs", easLogs.length + schemaLogs.length);
+  console.log("total  logs", allLogs.length);
 }
