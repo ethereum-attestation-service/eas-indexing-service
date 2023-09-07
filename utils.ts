@@ -323,9 +323,13 @@ export async function createSchemasFromLogs(logs: ethers.providers.Log[]) {
     schemaCount++;
 
     console.log("Creating new schema", schema);
-    await prisma.schema.create({
-      data: { ...schema, index: schemaCount.toString() },
-    });
+    try {
+      await prisma.schema.create({
+        data: { ...schema, index: schemaCount.toString() },
+      });
+    } catch (error) {
+      console.log("Error creating schema", error);
+    }
   }
 }
 
