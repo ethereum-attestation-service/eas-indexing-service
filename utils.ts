@@ -176,7 +176,12 @@ function timeout(ms: number) {
 
 const safeToNumber = (num: ethers.BigNumber) => {
   try {
-    return num.toNumber();
+    const tmpNum = num.toNumber();
+    if (tmpNum > 2147483647) {
+      return 2147483647;
+    } else {
+      return num;
+    }
   } catch (error) {
     console.log("Error converting to number", error);
 
