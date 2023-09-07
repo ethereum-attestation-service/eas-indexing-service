@@ -180,7 +180,7 @@ const safeToNumber = (num: ethers.BigNumber) => {
     if (tmpNum > 2147483647) {
       return 2147483647;
     } else {
-      return num;
+      return tmpNum;
     }
   } catch (error) {
     console.log("Error converting to number", error);
