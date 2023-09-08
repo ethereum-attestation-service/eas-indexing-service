@@ -118,7 +118,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     schemaRegistryAddress: "0x720c2bA66D19A725143FBf5fDC5b4ADA2742682E",
     contractStartBlock: 4843430,
     etherscanURL: "https://goerli.basescan.org/",
-    rpcProvider: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_BASE_API_KEY}`,
+    rpcProvider: `https://goerli.base.org`,
   },
   {
     chainId: 8453,
@@ -129,7 +129,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     schemaRegistryAddress: "0x4200000000000000000000000000000000000020",
     contractStartBlock: 3701279,
     etherscanURL: "https://basescan.org/",
-    rpcProvider: `https://mainnet.base.org`,
+    rpcProvider: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_BASE_API_KEY}`,
   },
   {
     chainId: 59144,
