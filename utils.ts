@@ -10,6 +10,10 @@ const batchSize = process.env.BATCH_SIZE
   ? Number(process.env.BATCH_SIZE)
   : 9500;
 
+const requestDelay = process.env.REQUEST_DELAY
+  ? Number(process.env.REQUEST_DELAY)
+  : 0;
+
 const limit = pLimit(5);
 
 export type EASChainConfig = {
@@ -504,43 +508,43 @@ export async function updateDbFromRelevantLog(log: ethers.providers.Log) {
       log.topics[0] === ethers.utils.id(registeredEventSignatureV2)
     ) {
       await createSchemasFromLogs([log]);
-      await updateServiceStatToLastBlock(
-        false,
-        "latestSchemaBlockNum",
-        log.blockNumber
-      );
+      // await updateServiceStatToLastBlock(
+      //   false,
+      //   "latestSchemaBlockNum",
+      //   log.blockNumber
+      // );
     }
   } else if (log.address === EASContractAddress) {
     if (log.topics[0] === ethers.utils.id(attestedEventSignature)) {
       await createAttestationsForLogs([log]);
-      await updateServiceStatToLastBlock(
-        false,
-        "latestAttestationBlockNum",
-        log.blockNumber
-      );
+      // await updateServiceStatToLastBlock(
+      //   false,
+      //   "latestAttestationBlockNum",
+      //   log.blockNumber
+      // );
     } else if (log.topics[0] === ethers.utils.id(revokedEventSignature)) {
       await revokeAttestationsFromLogs([log]);
-      await updateServiceStatToLastBlock(
-        false,
-        "latestAttestationRevocationBlockNum",
-        log.blockNumber
-      );
+      // await updateServiceStatToLastBlock(
+      //   false,
+      //   "latestAttestationRevocationBlockNum",
+      //   log.blockNumber
+      // );
     } else if (log.topics[0] === ethers.utils.id(timestampEventSignature)) {
       await createTimestampForLogs([log]);
-      await updateServiceStatToLastBlock(
-        false,
-        "latestTimestampBlockNum",
-        log.blockNumber
-      );
+      // await updateServiceStatToLastBlock(
+      //   false,
+      //   "latestTimestampBlockNum",
+      //   log.blockNumber
+      // );
     } else if (
       log.topics[0] === ethers.utils.id(revokedOffchainEventSignature)
     ) {
       await createOffchainRevocationsForLogs([log]);
-      await updateServiceStatToLastBlock(
-        false,
-        "latestOffchainRevocationBlockNum",
-        log.blockNumber
-      );
+      // await updateServiceStatToLastBlock(
+      //   false,
+      //   "latestOffchainRevocationBlockNum",
+      //   log.blockNumber
+      // );
     }
   }
 }
@@ -585,6 +589,7 @@ export async function getAndUpdateAllRelevantLogs() {
 
     for (const log of schemaLogs) {
       await updateDbFromRelevantLog(log);
+      await timeout(requestDelay);
     }
 
     const easLogs = await provider.getLogs({
@@ -598,16 +603,14 @@ export async function getAndUpdateAllRelevantLogs() {
 
     for (const log of easLogs) {
       await updateDbFromRelevantLog(log);
+      await timeout(requestDelay);
     }
 
-    currentBlock += batchSize;
-  }
+    await updateServiceStatToLastBlock(false, serviceStatPropertyName, toBlock);
 
-  await updateServiceStatToLastBlock(
-    false,
-    serviceStatPropertyName,
-    latestBlock
-  );
+    currentBlock += batchSize;
+    await timeout(requestDelay);
+  }
 
   console.log("total  logs", allLogs.length);
 }
