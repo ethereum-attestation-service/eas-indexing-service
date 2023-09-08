@@ -121,6 +121,17 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     rpcProvider: `https://goerli.base.org`,
   },
   {
+    chainId: 8453,
+    chainName: "base",
+    subdomain: "base.",
+    version: "1.0.1",
+    contractAddress: "0x4200000000000000000000000000000000000021",
+    schemaRegistryAddress: "0x4200000000000000000000000000000000000020",
+    contractStartBlock: 3701279,
+    etherscanURL: "https://basescan.org/",
+    rpcProvider: `https://mainnet.base.org`,
+  },
+  {
     chainId: 59144,
     chainName: "linea",
     subdomain: "linea.",
