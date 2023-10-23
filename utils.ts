@@ -157,6 +157,17 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     etherscanURL: "https://lineascan.build/",
     rpcProvider: `https://linea-mainnet.infura.io/v3/${process.env.INFURA_LINEA_API_KEY}`,
   },
+  {
+    chainId: 80001,
+    chainName: "polygon-mumbai",
+    subdomain: "polygon-mumbai.",
+    version: "1.2.0",
+    contractAddress: "0xaEF4103A04090071165F78D45D83A0C0782c2B2a",
+    schemaRegistryAddress: "0x55D26f9ae0203EF95494AE4C170eD35f4Cf77797",
+    contractStartBlock: 41442300,
+    etherscanURL: "https://mumbai.polygonscan.com/",
+    rpcProvider: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}`,
+  },
 ];
 
 const activeChainConfig = EAS_CHAIN_CONFIGS.find(
