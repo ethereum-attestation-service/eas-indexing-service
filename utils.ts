@@ -342,13 +342,15 @@ export async function getFormattedSchemaFromLog(
 export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
   for (let log of logs) {
     const attestation = await easContract.getAttestation(log.data);
-    await prisma.attestation.update({
+    const updatedAttestatrion = await prisma.attestation.update({
       where: { id: attestation[0] },
       data: {
         revoked: true,
         revocationTime: attestation.revocationTime.toNumber(),
       },
     });
+
+    await processRevokedAttestation(updatedAttestatrion);
   }
 }
 
@@ -437,6 +439,38 @@ export async function createTimestampForLogs(logs: ethers.providers.Log[]) {
         txid: log.transactionHash,
       },
     });
+  }
+}
+
+export async function processRevokedAttestation(
+  attestation: Attestation
+): Promise<void> {
+  if (attestation.schemaId === schemaNameUID) {
+    try {
+      const decodedNameAttestationData = ethers.utils.defaultAbiCoder.decode(
+        ["bytes32", "string"],
+        attestation.data
+      );
+
+      console.log("Removing schema name: ", decodedNameAttestationData[1]);
+
+      console.log({
+        name: decodedNameAttestationData[1],
+        schemaId: decodedNameAttestationData[0],
+        attesterAddress: attestation.attester,
+      });
+
+      await prisma.schemaName.deleteMany({
+        where: {
+          name: decodedNameAttestationData[1],
+          schemaId: decodedNameAttestationData[0],
+          attesterAddress: attestation.attester,
+        },
+      });
+    } catch (e) {
+      console.log("Error: Unable to decode schema name", e);
+      return;
+    }
   }
 }
 
