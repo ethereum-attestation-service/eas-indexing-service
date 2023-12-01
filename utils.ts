@@ -169,6 +169,17 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     etherscanURL: "https://mumbai.polygonscan.com/",
     rpcProvider: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}`,
   },
+  {
+    chainId: 534351,
+    chainName: "scroll-sepolia",
+    subdomain: "scroll-sepolia.",
+    version: "1.2.0",
+    contractAddress: "0xaEF4103A04090071165F78D45D83A0C0782c2B2a",
+    schemaRegistryAddress: "0x55D26f9ae0203EF95494AE4C170eD35f4Cf77797",
+    contractStartBlock: 2436100,
+    etherscanURL: "https://mumbai.polygonscan.com/",
+    rpcProvider: `https://sepolia-rpc.scroll.io/`,
+  },
 ];
 
 const activeChainConfig = EAS_CHAIN_CONFIGS.find(
