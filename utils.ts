@@ -409,10 +409,18 @@ export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
 
   for (let attestation of attestations) {
     if (attestation !== null) {
-      console.log("Creating new attestation", attestation);
+      const existingAttestation = await prisma.attestation.findUnique({
+        where: { id: attestation.id },
+      });
 
-      await prisma.attestation.create({ data: attestation });
-      await processCreatedAttestation(attestation);
+      if (existingAttestation) {
+        console.log("Attestation already exists", attestation.id);
+      } else {
+        console.log("Creating new attestation", attestation);
+
+        await prisma.attestation.create({ data: attestation });
+        await processCreatedAttestation(attestation);
+      }
     }
   }
 }
