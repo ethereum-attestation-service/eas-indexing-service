@@ -110,7 +110,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     version: "1.0.2",
     contractAddress: "0x4200000000000000000000000000000000000021",
     schemaRegistryAddress: "0x4200000000000000000000000000000000000020",
-    contractStartBlock: 4878469,
+    contractStartBlock: 4878430,
     etherscanURL: "https://sepolia-optimism.etherscan.io/",
     rpcProvider: `https://sepolia.optimism.io`,
   },
