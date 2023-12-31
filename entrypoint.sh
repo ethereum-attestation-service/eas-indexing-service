@@ -16,5 +16,8 @@ done
 # Run Prisma db push
 npx prisma db push
 
+# Run Prisma generate
+SKIP_PRISMA_VERSION_CHECK=true npx prisma generate
+
 # Start the application
 yarn start
