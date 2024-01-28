@@ -136,6 +136,17 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     etherscanURL: "https://goerli.basescan.org/",
     rpcProvider: `https://goerli.base.org`,
   },
+  {
+    chainId: 84532,
+    chainName: "base-sepolia",
+    subdomain: "base-sepolia.",
+    version: "1.2.0",
+    contractAddress: "0x4200000000000000000000000000000000000021",
+    schemaRegistryAddress: "0x4200000000000000000000000000000000000020",
+    contractStartBlock: 5252000,
+    etherscanURL: "https://sepolia.basescan.org/",
+    rpcProvider: `https://sepolia.base.org`,
+  },
   // {
   //   chainId: 84531,
   //   chainName: "base-goerli",
