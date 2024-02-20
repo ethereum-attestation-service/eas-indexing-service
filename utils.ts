@@ -220,7 +220,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     contractAddress: "0xaEF4103A04090071165F78D45D83A0C0782c2B2a",
     schemaRegistryAddress: "0x55D26f9ae0203EF95494AE4C170eD35f4Cf77797",
     contractStartBlock: 2436100,
-    etherscanURL: "https://mumbai.polygonscan.com/",
+    etherscanURL: "https://sepolia.scrollscan.com/",
     rpcProvider: `https://sepolia-rpc.scroll.io/`,
   },
 ];

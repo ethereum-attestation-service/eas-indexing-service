@@ -44,7 +44,7 @@ You'll need to skip the version check due to the usage of the `typegraphql-prism
 Then you can start the Docker services:
 
 ```bash
-doccker-compose up -d
+docker-compose up -d
 ````
 
 If you end up making any changes to this project's files, like adding your own chain config, remember to rebuild the
