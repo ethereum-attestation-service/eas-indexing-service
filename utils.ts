@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import pLimit from "p-limit";
 import { Eas__factory, EasSchema__factory } from "./types/ethers-contracts";
 import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
+import * as fs from "fs";
 
 const batchSize = process.env.BATCH_SIZE
   ? Number(process.env.BATCH_SIZE)
@@ -408,6 +409,23 @@ export async function getFormattedSchemaFromLog(
 export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
   for (let log of logs) {
     const attestation = await easContract.getAttestation(log.data);
+
+    const attestationFromDb = await prisma.attestation.findUnique({
+      where: { id: attestation[0] },
+    });
+
+    if (!attestationFromDb) {
+      console.log("Attestation not found in DB", attestation[0]);
+
+      // Should never happen, but log it just in case
+      fs.appendFileSync(
+        "attestations_not_found_for_revoke.txt",
+        `${attestation[0]}\n`
+      );
+
+      continue;
+    }
+
     const updatedAttestatrion = await prisma.attestation.update({
       where: { id: attestation[0] },
       data: {
