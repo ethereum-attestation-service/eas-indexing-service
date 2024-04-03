@@ -623,10 +623,6 @@ async function getStartData(serviceStatPropertyName: string) {
   return { latestBlockNumServiceStat, fromBlock };
 }
 
-export function getLastBlockNumberFromLog(logs: ethers.providers.Log[]) {
-  return logs.length ? logs[logs.length - 1].blockNumber : 0;
-}
-
 export async function updateDbFromRelevantLog(log: ethers.providers.Log) {
   if (log.address === EASSchemaRegistryAddress) {
     if (
@@ -634,43 +630,18 @@ export async function updateDbFromRelevantLog(log: ethers.providers.Log) {
       log.topics[0] === ethers.utils.id(registeredEventSignatureV2)
     ) {
       await createSchemasFromLogs([log]);
-      // await updateServiceStatToLastBlock(
-      //   false,
-      //   "latestSchemaBlockNum",
-      //   log.blockNumber
-      // );
     }
   } else if (log.address === EASContractAddress) {
     if (log.topics[0] === ethers.utils.id(attestedEventSignature)) {
       await createAttestationsForLogs([log]);
-      // await updateServiceStatToLastBlock(
-      //   false,
-      //   "latestAttestationBlockNum",
-      //   log.blockNumber
-      // );
     } else if (log.topics[0] === ethers.utils.id(revokedEventSignature)) {
       await revokeAttestationsFromLogs([log]);
-      // await updateServiceStatToLastBlock(
-      //   false,
-      //   "latestAttestationRevocationBlockNum",
-      //   log.blockNumber
-      // );
     } else if (log.topics[0] === ethers.utils.id(timestampEventSignature)) {
       await createTimestampForLogs([log]);
-      // await updateServiceStatToLastBlock(
-      //   false,
-      //   "latestTimestampBlockNum",
-      //   log.blockNumber
-      // );
     } else if (
       log.topics[0] === ethers.utils.id(revokedOffchainEventSignature)
     ) {
       await createOffchainRevocationsForLogs([log]);
-      // await updateServiceStatToLastBlock(
-      //   false,
-      //   "latestOffchainRevocationBlockNum",
-      //   log.blockNumber
-      // );
     }
   }
 }
