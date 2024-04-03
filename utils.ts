@@ -37,17 +37,6 @@ if (!CHAIN_ID) {
 }
 
 export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
-  // {
-  //   chainId: 11155111,
-  //   chainName: "Sepolia",
-  //   subdomain: "",
-  //   version: "0.25",
-  //   contractAddress: "0x25E36ebB051ae76c0D59E6c1dD0b29A5fc520061",
-  //   schemaRegistryAddress: "0x4dd8b988B64A4052B5f142Af845AA49D2B2cD10D",
-  //   etherscanURL: "https://sepolia.etherscan.io",
-  //   contractStartBlock: 2825261,
-  //   rpcProvider: "https://rpc.sepolia.ethpandaops.io/",
-  // },
   {
     chainId: 11155111,
     chainName: "sepolia",
@@ -92,17 +81,6 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     etherscanURL: "https://etherscan.io",
     rpcProvider: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
   },
-  // {
-  //   chainId: 420,
-  //   chainName: "optimism-goerli",
-  //   subdomain: "optimism-goerli.",
-  //   version: "0.27",
-  //   contractAddress: "0x1a5650D0EcbCa349DD84bAFa85790E3e6955eb84",
-  //   schemaRegistryAddress: "0x7b24C7f8AF365B4E308b6acb0A7dfc85d034Cb3f",
-  //   contractStartBlock: 8513369,
-  //   etherscanURL: "https://goerli-optimism.etherscan.io/",
-  //   rpcProvider: `https://opt-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_OPTIMISM_GOERLI_API_KEY}`,
-  // },
   {
     chainId: 420,
     chainName: "optimism-goerli",
@@ -158,17 +136,6 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     etherscanURL: "https://sepolia.basescan.org/",
     rpcProvider: `https://sepolia.base.org`,
   },
-  // {
-  //   chainId: 84531,
-  //   chainName: "base-goerli",
-  //   subdomain: "base-goerli.",
-  //   version: "0.27",
-  //   contractAddress: "0xAcfE09Fd03f7812F022FBf636700AdEA18Fd2A7A",
-  //   schemaRegistryAddress: "0x720c2bA66D19A725143FBf5fDC5b4ADA2742682E",
-  //   contractStartBlock: 4843430,
-  //   etherscanURL: "https://goerli.basescan.org/",
-  //   rpcProvider: `https://goerli.base.org`,
-  // },
   {
     chainId: 8453,
     chainName: "base",
@@ -234,6 +201,17 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     contractStartBlock: 2436100,
     etherscanURL: "https://sepolia.scrollscan.com/",
     rpcProvider: `https://sepolia-rpc.scroll.io/`,
+  },
+  {
+    chainId: 42220,
+    chainName: "celo",
+    subdomain: "celo.",
+    version: "1.3.0",
+    contractAddress: "0x72E1d8ccf5299fb36fEfD8CC4394B8ef7e98Af92",
+    schemaRegistryAddress: "0x5ece93bE4BDCF293Ed61FA78698B594F2135AF34",
+    contractStartBlock: 24646038,
+    etherscanURL: "https://celoscan.io",
+    rpcProvider: `https://forno.celo.org`,
   },
 ];
 
