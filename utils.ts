@@ -213,6 +213,17 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     etherscanURL: "https://celoscan.io",
     rpcProvider: `https://forno.celo.org`,
   },
+  {
+    chainId: 324,
+    chainName: "zksync",
+    subdomain: "zksync.",
+    version: "1.3.0",
+    contractAddress: "0x21d8d4eE83b80bc0Cc0f2B7df3117Cf212d02901",
+    schemaRegistryAddress: "0xB8566376dFe68B76FA985D5448cc2FbD578412a2",
+    contractStartBlock: 1714515518,
+    etherscanURL: "https://explorer.zksync.io",
+    rpcProvider: `https://mainnet.era.zksync.io`,
+  },
 ];
 
 const activeChainConfig = EAS_CHAIN_CONFIGS.find(
