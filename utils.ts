@@ -607,7 +607,7 @@ export async function updateServiceStatToLastBlock(
       data: { name: serviceStatPropertyName, value: lastBlock.toString() },
     });
   } else {
-    if (lastBlock !== 0) {
+    if (lastBlock !== 0 && lastBlock > Number(existing.value)) {
       await prisma.serviceStat.update({
         where: { name: serviceStatPropertyName },
         data: { value: lastBlock.toString() },
@@ -721,4 +721,19 @@ export async function getAndUpdateAllRelevantLogs() {
   }
 
   console.log("total  logs", allLogs.length);
+}
+
+export async function updateDbFromEthTransaction(txId: string) {
+  const tx = await provider.getTransactionReceipt(txId);
+
+  if (!tx) {
+    console.log("Transaction not found", txId);
+    return;
+  }
+
+  for (const log of tx.logs) {
+    await updateDbFromRelevantLog(log);
+  }
+
+  console.log("Processed logs for tx", txId);
 }
