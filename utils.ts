@@ -189,7 +189,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     schemaRegistryAddress: "0xD2CDF46556543316e7D34e8eDc4624e2bB95e3B6",
     contractStartBlock: 1317850,
     etherscanURL: "https://scrollscan.com/",
-    rpcProvider: `https://scroll-mainnet-public.unifra.io`,
+    rpcProvider: `https://skilled-powerful-sailboat.scroll-mainnet.quiknode.pro/${process.env.SCROLL_QUICKNODE_API_KEY}/`,
   },
   {
     chainId: 534351,
