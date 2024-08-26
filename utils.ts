@@ -224,6 +224,17 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     etherscanURL: "https://explorer.zksync.io",
     rpcProvider: `https://mainnet.era.zksync.io`,
   },
+  {
+    chainId: 31,
+    chainName: "rootstock-testnet",
+    subdomain: "rootstock-testnet.",
+    version: "1.3.0",
+    contractAddress: "0xc300aeEaDd60999933468738c9F5D7e9C0671e1c",
+    schemaRegistryAddress: "0x679c62956cD2801AbAbF80e9D430f18859Eea2d5",
+    contractStartBlock: 5457123,
+    etherscanURL: "https://rootstock-testnet.blockscout.com/",
+    rpcProvider: `https://rpc.testnet.rootstock.io/${process.env.ROOTSTOCK_TESTNET_API_KEY}`,
+  },
 ];
 
 const activeChainConfig = EAS_CHAIN_CONFIGS.find(
