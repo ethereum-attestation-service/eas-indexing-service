@@ -235,6 +235,17 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     etherscanURL: "https://rootstock-testnet.blockscout.com/",
     rpcProvider: `https://rpc.testnet.rootstock.io/${process.env.ROOTSTOCK_TESTNET_API_KEY}`,
   },
+  {
+    chainId: 30,
+    chainName: "rootstock",
+    subdomain: "rootstock.",
+    version: "1.3.0",
+    contractAddress: "0x54C0726E9d2D57Bc37AD52c7E219A3229e0eE963",
+    schemaRegistryAddress: "0xeF29675d82CC5967069d6d9C17F2719f67728F5B",
+    contractStartBlock: 6635587,
+    etherscanURL: "https://rootstock.blockscout.com/",
+    rpcProvider: `https://rpc.mainnet.rootstock.io/${process.env.ROOTSTOCK_API_KEY}`,
+  },
 ];
 
 const activeChainConfig = EAS_CHAIN_CONFIGS.find(
