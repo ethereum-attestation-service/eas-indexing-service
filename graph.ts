@@ -11,7 +11,7 @@ import {
   UseMiddleware,
 } from "type-graphql";
 import { ApolloServer } from "apollo-server";
-import { prisma } from "./db.server";
+import { prisma } from "./db.read-only";
 
 const PORT = process.env.GRAPH_PORT || 4000;
 
