@@ -17,6 +17,9 @@ const requestDelay = process.env.REQUEST_DELAY
 
 const limit = pLimit(5);
 
+// Add a constant for maximum retries
+const MAX_RETRIES = 5;
+
 export type EASChainConfig = {
   chainId: number;
   chainName: string;
@@ -300,6 +303,13 @@ export async function getFormattedAttestationFromLog(
   let tries = 1;
 
   do {
+    if (tries > MAX_RETRIES) {
+      console.log(
+        `Max retries reached for log ${log.transactionHash}. Skipping...`
+      );
+      return null; // Exit the loop and return null after max retries
+    }
+
     [
       UID,
       schemaUID,
@@ -369,6 +379,13 @@ export async function getFormattedSchemaFromLog(
   let tries = 1;
 
   do {
+    if (tries > MAX_RETRIES) {
+      console.log(
+        `Max retries reached for schema log ${log.transactionHash}. Skipping...`
+      );
+      throw new Error("Max retries reached while fetching schema.");
+    }
+
     [UID, resolver, revocable, schema] = await schemaContract.getSchema(
       log.topics[1]
     );
@@ -471,6 +488,8 @@ export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
         await prisma.attestation.create({ data: attestation });
         await processCreatedAttestation(attestation);
       }
+    } else {
+      console.log("Skipped creating attestation due to max retries.");
     }
   }
 }
