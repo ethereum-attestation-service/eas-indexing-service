@@ -17,6 +17,9 @@ const requestDelay = process.env.REQUEST_DELAY
 
 const limit = pLimit(5);
 
+// Add a constant for maximum retries
+const MAX_RETRIES = 5;
+
 export type EASChainConfig = {
   chainId: number;
   chainName: string;
@@ -158,16 +161,27 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     etherscanURL: "https://lineascan.build/",
     rpcProvider: `https://linea-mainnet.infura.io/v3/${process.env.INFURA_LINEA_API_KEY}`,
   },
+  // {
+  //   chainId: 80001,
+  //   chainName: "polygon-mumbai",
+  //   subdomain: "polygon-mumbai.",
+  //   version: "1.2.0",
+  //   contractAddress: "0xaEF4103A04090071165F78D45D83A0C0782c2B2a",
+  //   schemaRegistryAddress: "0x55D26f9ae0203EF95494AE4C170eD35f4Cf77797",
+  //   contractStartBlock: 41442300,
+  //   etherscanURL: "https://mumbai.polygonscan.com/",
+  //   rpcProvider: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}`,
+  // },
   {
-    chainId: 80001,
-    chainName: "polygon-mumbai",
-    subdomain: "polygon-mumbai.",
-    version: "1.2.0",
-    contractAddress: "0xaEF4103A04090071165F78D45D83A0C0782c2B2a",
-    schemaRegistryAddress: "0x55D26f9ae0203EF95494AE4C170eD35f4Cf77797",
-    contractStartBlock: 41442300,
-    etherscanURL: "https://mumbai.polygonscan.com/",
-    rpcProvider: `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    chainId: 80002,
+    chainName: "polygon-amoy",
+    subdomain: "polygon-amoy.",
+    version: "1.3.0",
+    contractAddress: "0xb101275a60d8bfb14529C421899aD7CA1Ae5B5Fc",
+    schemaRegistryAddress: "0x23c5701A1BDa89C61d181BD79E5203c730708AE7",
+    contractStartBlock: 7372405,
+    etherscanURL: "https://amoy.polygonscan.com/",
+    rpcProvider: `https://restless-palpable-mountain.matic-amoy.quiknode.pro/${process.env.QUICKNODE_POLYGON_AMOY_API_KEY}/`,
   },
   {
     chainId: 137,
@@ -322,6 +336,13 @@ export async function getFormattedAttestationFromLog(
   let tries = 1;
 
   do {
+    if (tries > MAX_RETRIES) {
+      console.log(
+        `Max retries reached for log ${log.transactionHash}. Skipping...`
+      );
+      return null; // Exit the loop and return null after max retries
+    }
+
     [
       UID,
       schemaUID,
@@ -391,6 +412,13 @@ export async function getFormattedSchemaFromLog(
   let tries = 1;
 
   do {
+    if (tries > MAX_RETRIES) {
+      console.log(
+        `Max retries reached for schema log ${log.transactionHash}. Skipping...`
+      );
+      throw new Error("Max retries reached while fetching schema.");
+    }
+
     [UID, resolver, revocable, schema] = await schemaContract.getSchema(
       log.topics[1]
     );
@@ -493,6 +521,8 @@ export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
         await prisma.attestation.create({ data: attestation });
         await processCreatedAttestation(attestation);
       }
+    } else {
+      console.log("Skipped creating attestation due to max retries.");
     }
   }
 }
