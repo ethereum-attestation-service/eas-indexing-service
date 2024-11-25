@@ -28,8 +28,8 @@ ROOTSTOCK_API_KEY=
 #REQUEST_DELAY=500 # How many ms to wait before making a request to RPC (useful for free plans)
 #BATCH_SIZE=2000 # How many blocks to fetch at once (some providers have limits)
 
-# Sepolia
-CHAIN_ID=11155111
+# Rootstock Tesnet
+CHAIN_ID=31
 ```
 Here you'll want to set `CHAIN_ID` to the chain you want to index. Make sure that `CHAIN_ID` has an associated
 config defined as an entry on `EAS_CHAIN_CONFIGS` in `utils.ts`.
