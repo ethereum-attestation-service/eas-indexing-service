@@ -245,7 +245,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     version: "1.4.1-beta.1",
     contractAddress: "0x4200000000000000000000000000000000000021",
     schemaRegistryAddress: "0x4200000000000000000000000000000000000020",
-    contractStartBlock: 3112753,
+    contractStartBlock: 2083241,
     etherscanURL: "https://sepolia.ink.explorer.io",
     rpcProvider: `https://maximum-dimensional-dust.ink-sepolia.quiknode.pro/${process.env.QUICKNODE_INK_SEPOLIA_API_KEY}/`,
   },
