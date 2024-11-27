@@ -238,6 +238,17 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     etherscanURL: "https://explorer.zksync.io",
     rpcProvider: `https://mainnet.era.zksync.io`,
   },
+  {
+    chainId: 763373,
+    chainName: "ink-sepolia",
+    subdomain: "ink-sepolia.",
+    version: "1.4.1-beta.1",
+    contractAddress: "0x4200000000000000000000000000000000000021",
+    schemaRegistryAddress: "0x4200000000000000000000000000000000000020",
+    contractStartBlock: 3112753,
+    etherscanURL: "https://sepolia.ink.explorer.io",
+    rpcProvider: `https://sepolia.ink.rpc.io`,
+  },
 ];
 
 const activeChainConfig = EAS_CHAIN_CONFIGS.find(
