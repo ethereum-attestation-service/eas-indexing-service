@@ -256,7 +256,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     version: "1.4.0",
     contractAddress: "0x9898C3FF2fdCA9E734556fC4BCCd5b9239218155",
     schemaRegistryAddress: "0x842511adC21B85C0B2fdB02AAcFA92fdf7Cda470",
-    contractStartBlock: 0,
+    contractStartBlock: 374675753,
     etherscanURL: "https://teloscan.io",
     rpcProvider: "https://mainnetv2.telos.net/",
   },
