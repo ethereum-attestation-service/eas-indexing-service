@@ -19,6 +19,8 @@ services:
     environment:
       CHAIN_ID: ${CHAIN_ID}
       DATABASE_URL: "postgresql://postgres:postgresPassword@eas-postgres:5432/eas-index"
+      ROOTSTOCK_TESTNET_API_KEY: ${ROOTSTOCK_TESTNET_API_KEY}
+      ROOTSTOCK_API_KEY: ${ROOTSTOCK_API_KEY}
     depends_on:
       - eas-postgres
     ports:
