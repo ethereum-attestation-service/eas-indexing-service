@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgresPassword
-      POSTGRES_DB: eas-index
+      POSTGRES_DB: eas-rootstock-testnet
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -18,7 +18,7 @@ services:
     container_name: eas_indexer_container
     environment:
       CHAIN_ID: ${CHAIN_ID}
-      DATABASE_URL: "postgresql://postgres:postgresPassword@eas-postgres:5432/eas-index"
+      DATABASE_URL: ${DATABASE_URL}
       ROOTSTOCK_TESTNET_API_KEY: ${ROOTSTOCK_TESTNET_API_KEY}
       ROOTSTOCK_API_KEY: ${ROOTSTOCK_API_KEY}
     depends_on:

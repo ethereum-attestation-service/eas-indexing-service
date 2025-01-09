@@ -14,7 +14,7 @@ You'll need to create a `.env` file in the root directory of the project. This f
 which you can find in `.env.example` as well:
 
 ```dotenv
-DATABASE_URL=postgresql://user:password@localhost:5432/eas-sepolia
+DATABASE_URL=postgresql://user:password@localhost:5432/eas-rootstock-testnet
 INFURA_API_KEY=
 INFURA_IPFS_USER=
 INFURA_IPFS_PASS=
@@ -78,6 +78,10 @@ add a `.yarnrc.yml` file to the root of the project with the following contents:
 ```yaml 
 nodeLinker: node-modules
 ```
+
+## Db Configuration 
+
+For each blockchain network, a separate database must be created. For example, `eas-rootstock-testnet` should be used for the Rootstock Testnet, and `eas-rootstock-mainnet` for the Rootstock Mainnet.
 
 
 
