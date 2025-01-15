@@ -260,6 +260,17 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     etherscanURL: "https://teloscan.io",
     rpcProvider: "https://mainnetv2.telos.net/",
   },
+  {
+    chainId: 1868,
+    chainName: "soneium",
+    subdomain: "soneium.",
+    version: "1.4.1-beta.1",
+    contractAddress: "0x4200000000000000000000000000000000000021",
+    schemaRegistryAddress: "0x4200000000000000000000000000000000000020",
+    contractStartBlock: 1885090,
+    etherscanURL: "https://soneium.blockscout.com",
+    rpcProvider: "https://rpc.soneium.org/",
+  },
 ];
 
 const activeChainConfig = EAS_CHAIN_CONFIGS.find(
