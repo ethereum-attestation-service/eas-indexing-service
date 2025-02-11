@@ -18,6 +18,7 @@ services:
     container_name: eas_indexer_container
     environment:
       CHAIN_ID: ${CHAIN_ID}
+      DATABASE_URL: "postgresql://postgres:postgresPassword@eas-postgres:5432/eas-index"
       DB_PASSWORD: postgresPassword
       DB_USER: postgres
       DB_NAME: eas-index
