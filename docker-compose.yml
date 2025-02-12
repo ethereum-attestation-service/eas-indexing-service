@@ -1,29 +1,24 @@
 version: "3.9"
 
 services:
-  eas-postgres:
-    image: postgres:latest
-    container_name: eas-postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgresPassword
-      POSTGRES_DB: eas-index
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432"
+  # eas-postgres:
+  #   image: postgres:latest
+  #   container_name: eas-postgres
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgresPassword
+  #     POSTGRES_DB: eas-index
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432"
 
   eas-indexer:
     build: .
     container_name: eas_indexer_container
     environment:
       CHAIN_ID: ${CHAIN_ID}
-      DATABASE_URL: "postgresql://postgres:postgresPassword@eas-postgres:5432/eas-index"
-      DB_PASSWORD: postgresPassword
-      DB_USER: postgres
-      DB_NAME: eas-index
-      DB_HOST: eas-postgres
-      DB_PORT: 5432
+      DATABASE_URL: "postgresql://htzTB5noUeQN:7Y1urVgpdWysKZfM@10.53.192.4:5432/credoracore"
     depends_on:
       - eas-postgres
     ports:
