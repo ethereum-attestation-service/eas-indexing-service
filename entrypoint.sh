@@ -7,6 +7,8 @@ DB_PASSWORD=$(echo $DATABASE_URL | cut -d'@' -f1 | cut -d':' -f3 | cut -d'/' -f3
 DB_NAME=$(echo $DATABASE_URL | cut -d'/' -f4)
 
 
+DEBUG=prisma:* # Enable all Prisma logs
+
 # Wait for PostgreSQL to be available
 until PGPASSWORD=$DB_PASSWORD psql -p 5432 -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -c '\q'; do
   echo "PostgreSQL not ready, waiting..."
@@ -14,10 +16,10 @@ until PGPASSWORD=$DB_PASSWORD psql -p 5432 -h "$DB_HOST" -U "$DB_USER" -d "$DB_N
 done
 
 # Run Prisma db push
-npx prisma db push
+DEBUG=$DEBUG npx prisma db push
 
 # Run Prisma generate
-SKIP_PRISMA_VERSION_CHECK=true npx prisma generate
+DEBUG=$DEBUG SKIP_PRISMA_VERSION_CHECK=true npx prisma generate
 
 # Start the application
 yarn start
