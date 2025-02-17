@@ -14,7 +14,7 @@ until PGPASSWORD=$DB_PASSWORD psql -p 5432 -h "$DB_HOST" -U "$DB_USER" -d "$DB_N
 done
 
 # Run Prisma db push
-npx prisma db push
+# npx prisma db push
 
 
 # Start the application
