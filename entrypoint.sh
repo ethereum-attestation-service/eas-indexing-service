@@ -15,6 +15,8 @@ until PGPASSWORD=$DB_PASSWORD psql -p 5432 -h "$DB_HOST" -U "$DB_USER" -d "$DB_N
   sleep 2
 done
 
+PRISMA_DEBUG="*" npx prisma migrate dev
+
 # Run Prisma db push
 DEBUG=$DEBUG npx prisma db push
 
