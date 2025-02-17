@@ -19,5 +19,7 @@ COPY entrypoint.sh /app/entrypoint.sh
 RUN apk update && apk add --no-cache postgresql-client
 RUN chmod +x /app/entrypoint.sh
 RUN yarn install
+RUN SKIP_PRISMA_VERSION_CHECK=true npx prisma generate
+
 ENTRYPOINT ["/app/entrypoint.sh"]
 EXPOSE 4000
