@@ -28,7 +28,5 @@ RUN apk add --no-cache postgresql-client
 RUN yarn install
 
 # Generate Prisma client
-RUN SKIP_PRISMA_VERSION_CHECK=true npx prisma generate
-
 ENTRYPOINT ["/app/entrypoint.sh"]
 EXPOSE 4000

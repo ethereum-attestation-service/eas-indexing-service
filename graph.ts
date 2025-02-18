@@ -145,6 +145,6 @@ export async function startGraph() {
     context: () => ({ prisma }),
   });
 
-  const { url } = await server.listen(PORT, { host: '0.0.0.0' });
+  const { url } = await server.listen({ port: PORT, host: '0.0.0.0' });
   console.log(`Server is running, GraphQL Playground available at ${url}`);
 }

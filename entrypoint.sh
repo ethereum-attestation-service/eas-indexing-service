@@ -13,6 +13,11 @@ until PGPASSWORD=$DB_PASSWORD psql -p 5432 -h "$DB_HOST" -U "$DB_USER" -d "$DB_N
   sleep 2
 done
 
+# Run Prisma db push
+npx prisma db push
+
+# Run Prisma generate
+SKIP_PRISMA_VERSION_CHECK=true npx prisma generate
 
 # Start the application
 yarn start
