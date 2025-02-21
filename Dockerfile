@@ -22,7 +22,7 @@ COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Install dependencies
-RUN apk add --no-cache postgresql-client
+RUN apk update && apk add --no-cache postgresql-client
 
 # Install Node dependencies
 RUN yarn install
