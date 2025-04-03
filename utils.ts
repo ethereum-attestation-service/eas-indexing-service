@@ -250,6 +250,17 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     rpcProvider: `https://maximum-dimensional-dust.ink-sepolia.quiknode.pro/${process.env.QUICKNODE_INK_SEPOLIA_API_KEY}/`,
   },
   {
+    chainId: 57073,
+    chainName: "ink",
+    subdomain: "ink.",
+    version: "1.4.1-beta.1",
+    contractAddress: "0x4200000000000000000000000000000000000021",
+    schemaRegistryAddress: "0x4200000000000000000000000000000000000020",
+    contractStartBlock: 6262900,
+    etherscanURL: "https://explorer.inkonchain.com",
+    rpcProvider: `https://rpc-qnd.inkonchain.com`,
+  },
+  {
     chainId: 40,
     chainName: "telos",
     subdomain: "telos.",
