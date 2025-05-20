@@ -41,6 +41,17 @@ if (!CHAIN_ID) {
 
 export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
   {
+    chainId: 6342,
+    chainName: "megaeth-testnet",
+    subdomain: "",
+    version: "0.26",
+    contractAddress: "0x3efE89738bC10ba532C7Fe06F0e454358b189d06",
+    schemaRegistryAddress: "0xeA1794E9fe67473547548ae0ea6CA53a31E9c426",
+    etherscanURL: "https://www.megaexplorer.xyz",
+    contractStartBlock: 6548018,
+    rpcProvider: process.env.MEGAETH_TESTNET_RPC_URL as string,
+  },
+  {
     chainId: 11155111,
     chainName: "sepolia",
     subdomain: "",
