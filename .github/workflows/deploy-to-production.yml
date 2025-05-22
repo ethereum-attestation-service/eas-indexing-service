@@ -1,0 +1,74 @@
+name: Deploy to Production
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+env:
+  GITHUB_SHA: ${{ github.sha }}
+
+jobs:
+  buildAndPush:
+    name: Build and push
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Set up buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ secrets.PRODUCTION_REGION }}
+          role-to-assume: ${{ secrets.PRODUCTION_ROLE_TO_ASSUME }}
+
+      - name: Configure environment
+        run: |
+          aws ssm get-parameter --name ${{ secrets.PRODUCTION_PARAMETER_NAME }} | jq '.Parameter.Value' | jq '. | fromjson' | jq -r 'to_entries | .[] | .key + "=" + .value' >> $GITHUB_ENV || exit 1
+
+      - name: Amazon ECR login
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Bake
+        uses: docker/bake-action@v2
+        with:
+          targets: app
+          set: |
+            app.tags=${{ env.REPOSITORY_URI }}:${{ env.GITHUB_SHA }}
+            app.tags=${{ env.REPOSITORY_URI }}:release
+            app.output=type=registry
+
+  deploy:
+    needs: buildAndPush
+    name: Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ secrets.PRODUCTION_REGION }}
+          role-to-assume: ${{ secrets.PRODUCTION_ROLE_TO_ASSUME }}
+
+      - name: Configure environment
+        run: |
+          aws ssm get-parameter --name ${{ secrets.PRODUCTION_PARAMETER_NAME }} | jq '.Parameter.Value' | jq '. | fromjson' | jq -r 'to_entries | .[] | .key + "=" + .value' >> $GITHUB_ENV || exit 1
+
+      - name: Configure kube
+        run: |
+          eval $KUBECONFIG_COMMAND
+
+      - name: Deploy
+        run: |
+          kubectl set image --namespace $NAMESPACE deployment/eas-indexing-service eas-indexing-service=$REPOSITORY_URI:$GITHUB_SHA
+
+      - name: Verify
+        run: |
+          kubectl rollout status --namespace $NAMESPACE deployment/eas-indexing-service
