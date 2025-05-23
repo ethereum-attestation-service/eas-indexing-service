@@ -67,8 +67,8 @@ jobs:
 
       - name: Deploy
         run: |
-          kubectl set image --namespace $NAMESPACE deployment/eas-indexing-service eas-indexing-service=$REPOSITORY_URI:$GITHUB_SHA
+          kubectl set image --namespace $NAMESPACE deployment/eas-indexer-megaeth-testnet eas-indexer-megaeth-testnet=$REPOSITORY_URI:$GITHUB_SHA
 
       - name: Verify
         run: |
-          kubectl rollout status --namespace $NAMESPACE deployment/eas-indexing-service
+          kubectl rollout status --namespace $NAMESPACE deployment/eas-indexer-megaeth-testnet
