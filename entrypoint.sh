@@ -1,14 +1,10 @@
 #!/bin/sh
 set -e
 
-DB_HOST=$(echo $DATABASE_URL | cut -d'@' -f2 | cut -d':' -f1)
-DB_USER=$(echo $DATABASE_URL | cut -d'/' -f3 | cut -d':' -f1)
-DB_PASSWORD=$(echo $DATABASE_URL | cut -d'@' -f1 | cut -d':' -f3 | cut -d'/' -f3)
-DB_NAME=$(echo $DATABASE_URL | cut -d'/' -f4)
-
+export DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 
 # Wait for PostgreSQL to be available
-until PGPASSWORD=$DB_PASSWORD psql -p 5432 -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -c '\q'; do
+until PGPASSWORD=$DB_PASSWORD psql -p $DB_PORT -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -c '\q'; do
   echo "PostgreSQL not ready, waiting..."
   sleep 2
 done

@@ -18,7 +18,11 @@ services:
     container_name: eas_indexer_container
     environment:
       CHAIN_ID: ${CHAIN_ID}
-      DATABASE_URL: "postgresql://postgres:postgresPassword@eas-postgres:5432/eas-index"
+      DB_HOST: eas-postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgresPassword
+      DB_NAME: eas-index
     depends_on:
       - eas-postgres
     ports:
