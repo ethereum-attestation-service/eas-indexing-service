@@ -41,6 +41,17 @@ if (!CHAIN_ID) {
 
 export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
   {
+    chainId: 1632025,
+    chainName: "Rayls Testnet",
+    subdomain: "",
+    version: "1.4.0",
+    contractAddress: "0xC2679fBD37d54388Ce493F1DB75320D236e1815e",
+    schemaRegistryAddress: "0x240F841540c7Ba964b0d9Ca869AcDeaa62684C27",
+    etherscanURL: "https://rayls-test-chain.explorer.caldera.xyz",
+    contractStartBlock: 22417,
+    rpcProvider: "https://rayls-test-chain.rpc.caldera.xyz",
+  },
+  {
     chainId: 11155111,
     chainName: "sepolia",
     subdomain: "",
