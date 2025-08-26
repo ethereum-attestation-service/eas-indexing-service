@@ -586,8 +586,14 @@ export async function createTimestampForLogs(logs: ethers.providers.Log[]) {
 
     const tx = await provider.getTransaction(log.transactionHash);
 
-    await prisma.timestamp.create({
-      data: {
+    await prisma.timestamp.upsert({
+      where: { id: uid },
+      update: {
+        timestamp,
+        from: tx.from,
+        txid: log.transactionHash,
+      },
+      create: {
         id: uid,
         timestamp,
         from: tx.from,
