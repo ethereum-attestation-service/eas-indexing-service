@@ -49,7 +49,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     schemaRegistryAddress: "0x0a7E2Ff54e76B8E6659aedc9103FB21c038050D0",
     etherscanURL: "https://sepolia.etherscan.io",
     contractStartBlock: 2958570,
-    rpcProvider: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    rpcProvider: `https://delicate-withered-gas.ethereum-sepolia.quiknode.pro/${process.env.QUICKNODE_SEPOLIA_API_KEY}/`,
   },
   {
     chainId: 42161,
