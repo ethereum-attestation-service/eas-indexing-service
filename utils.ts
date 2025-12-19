@@ -15,7 +15,10 @@ const requestDelay = process.env.REQUEST_DELAY
   ? Number(process.env.REQUEST_DELAY)
   : 0;
 
-const limit = pLimit(5);
+const concurrencyLimit = process.env.CONCURRENCY_LIMIT
+  ? Number(process.env.CONCURRENCY_LIMIT)
+  : 20;
+const limit = pLimit(concurrencyLimit);
 
 // Add a constant for maximum retries
 const MAX_RETRIES = 5;
@@ -468,34 +471,69 @@ export async function getFormattedSchemaFromLog(
 }
 
 export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
-  for (let log of logs) {
-    const attestation = await easContract.getAttestation(log.data);
+  if (logs.length === 0) {
+    return;
+  }
 
-    const attestationFromDb = await prisma.attestation.findUnique({
-      where: { id: attestation[0] },
-    });
+  // Fetch all attestation data from chain in parallel
+  const attestationPromises = logs.map((log) =>
+    limit(() => easContract.getAttestation(log.data))
+  );
+  const chainAttestations = await Promise.all(attestationPromises);
 
-    if (!attestationFromDb) {
-      console.log("Attestation not found in DB", attestation[0]);
+  // Get all attestation IDs
+  const attestationIds = chainAttestations.map((a) => a[0]);
 
-      // Should never happen, but log it just in case
+  // Batch check which attestations exist in DB
+  const existingAttestations = await prisma.attestation.findMany({
+    where: { id: { in: attestationIds } },
+    select: { id: true },
+  });
+  const existingIdSet = new Set(existingAttestations.map((a) => a.id));
+
+  // Filter to only attestations that exist in DB
+  const validRevocations = chainAttestations.filter((a) =>
+    existingIdSet.has(a[0])
+  );
+
+  // Log any missing attestations
+  const missingAttestations = chainAttestations.filter(
+    (a) => !existingIdSet.has(a[0])
+  );
+  if (missingAttestations.length > 0) {
+    console.log(
+      `${missingAttestations.length} attestations not found in DB for revocation`
+    );
+    for (const att of missingAttestations) {
       fs.appendFileSync(
         "attestations_not_found_for_revoke.txt",
-        `${attestation[0]}\n`
+        `${att[0]}\n`
       );
-
-      continue;
     }
+  }
 
-    const updatedAttestatrion = await prisma.attestation.update({
-      where: { id: attestation[0] },
-      data: {
-        revoked: true,
-        revocationTime: attestation.revocationTime.toNumber(),
-      },
-    });
+  if (validRevocations.length === 0) {
+    return;
+  }
 
-    await processRevokedAttestation(updatedAttestatrion);
+  console.log(`Processing ${validRevocations.length} revocations`);
+
+  // Batch update all attestations using transaction
+  const updatedAttestations = await prisma.$transaction(
+    validRevocations.map((attestation) =>
+      prisma.attestation.update({
+        where: { id: attestation[0] },
+        data: {
+          revoked: true,
+          revocationTime: attestation.revocationTime.toNumber(),
+        },
+      })
+    )
+  );
+
+  // Process schema names for revoked attestations
+  for (const attestation of updatedAttestations) {
+    await processRevokedAttestation(attestation);
   }
 }
 
@@ -506,20 +544,45 @@ export async function createSchemasFromLogs(logs: ethers.providers.Log[]) {
 
   const schemas = await Promise.all(promises);
 
-  let schemaCount = await prisma.schema.count();
-
-  for (let schema of schemas) {
-    schemaCount++;
-
-    console.log("Creating new schema", schema);
-    try {
-      await prisma.schema.create({
-        data: { ...schema, index: schemaCount.toString() },
-      });
-    } catch (error) {
-      console.log("Error creating schema", error);
-    }
+  if (schemas.length === 0) {
+    return;
   }
+
+  // Get existing schema IDs in one query
+  const existingIds = await prisma.schema.findMany({
+    where: { id: { in: schemas.map((s) => s.id) } },
+    select: { id: true },
+  });
+  const existingIdSet = new Set(existingIds.map((s) => s.id));
+
+  // Filter to only new schemas
+  const newSchemas = schemas.filter((s) => !existingIdSet.has(s.id));
+
+  if (newSchemas.length === 0) {
+    console.log(
+      `All ${schemas.length} schemas already exist, skipping`
+    );
+    return;
+  }
+
+  // Get current count once for indexing
+  const schemaCount = await prisma.schema.count();
+
+  // Add index to each new schema
+  const schemasWithIndex = newSchemas.map((schema, i) => ({
+    ...schema,
+    index: (schemaCount + i + 1).toString(),
+  }));
+
+  console.log(
+    `Creating ${newSchemas.length} new schemas (${existingIdSet.size} already existed)`
+  );
+
+  // Batch insert all new schemas
+  await prisma.schema.createMany({
+    data: schemasWithIndex,
+    skipDuplicates: true,
+  });
 }
 
 export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
@@ -528,79 +591,133 @@ export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
   );
 
   const attestations = await Promise.all(promises);
+  const validAttestations = attestations.filter(
+    (a): a is Attestation => a !== null
+  );
 
-  for (let attestation of attestations) {
-    if (attestation !== null) {
-      const existingAttestation = await prisma.attestation.findUnique({
-        where: { id: attestation.id },
-      });
+  if (validAttestations.length === 0) {
+    return;
+  }
 
-      if (existingAttestation) {
-        console.log("Attestation already exists", attestation.id);
-      } else {
-        console.log("Creating new attestation", attestation);
+  // Get existing attestation IDs in one query to avoid N+1
+  const existingIds = await prisma.attestation.findMany({
+    where: { id: { in: validAttestations.map((a) => a.id) } },
+    select: { id: true },
+  });
+  const existingIdSet = new Set(existingIds.map((a) => a.id));
 
-        await prisma.attestation.create({ data: attestation });
-        await processCreatedAttestation(attestation);
-      }
-    } else {
-      console.log("Skipped creating attestation due to max retries.");
-    }
+  // Filter to only new attestations
+  const newAttestations = validAttestations.filter(
+    (a) => !existingIdSet.has(a.id)
+  );
+
+  if (newAttestations.length === 0) {
+    console.log(
+      `All ${validAttestations.length} attestations already exist, skipping`
+    );
+    return;
+  }
+
+  console.log(
+    `Creating ${newAttestations.length} new attestations (${existingIdSet.size} already existed)`
+  );
+
+  // Batch insert all new attestations
+  await prisma.attestation.createMany({
+    data: newAttestations,
+    skipDuplicates: true,
+  });
+
+  // Process schema names for newly created attestations
+  for (const attestation of newAttestations) {
+    await processCreatedAttestation(attestation);
   }
 }
 
 export async function createOffchainRevocationsForLogs(
   logs: ethers.providers.Log[]
 ) {
-  for (let log of logs) {
+  if (logs.length === 0) {
+    return;
+  }
+
+  // Fetch all transactions in parallel
+  const txPromises = logs.map((log) =>
+    limit(() => provider.getTransaction(log.transactionHash))
+  );
+  const transactions = await Promise.all(txPromises);
+
+  // Prepare all revocation data
+  const revocationData = logs.map((log, i) => {
     const uid = log.topics[2];
     const timestamp = ethers.BigNumber.from(log.topics[3]).toNumber();
-    console.log("Creating new offchainrevoke Log for", uid, timestamp);
+    const tx = transactions[i];
+    return {
+      uid,
+      timestamp,
+      from: tx.from,
+      txid: log.transactionHash,
+    };
+  });
 
-    const tx = await provider.getTransaction(log.transactionHash);
+  console.log(`Creating ${revocationData.length} offchain revocations`);
 
-    const newRevocation = await prisma.offchainRevocation.create({
-      data: {
-        timestamp,
-        uid,
-        from: tx.from,
-        txid: log.transactionHash,
-      },
-    });
+  // Batch create revocations
+  await prisma.offchainRevocation.createMany({
+    data: revocationData,
+    skipDuplicates: true,
+  });
 
-    await prisma.attestation.updateMany({
-      where: { id: uid, isOffchain: true, attester: tx.from },
-      data: {
-        revoked: true,
-        revocationTime: newRevocation.timestamp,
-      },
-    });
-  }
+  // Batch update attestations using transaction for consistency
+  await prisma.$transaction(
+    revocationData.map((rev) =>
+      prisma.attestation.updateMany({
+        where: { id: rev.uid, isOffchain: true, attester: rev.from },
+        data: {
+          revoked: true,
+          revocationTime: rev.timestamp,
+        },
+      })
+    )
+  );
 }
 
 export async function createTimestampForLogs(logs: ethers.providers.Log[]) {
-  for (let log of logs) {
-    const uid = log.topics[1];
-    const timestamp = ethers.BigNumber.from(log.topics[2]).toNumber();
-    console.log("Creating new Log for", uid, timestamp);
-
-    const tx = await provider.getTransaction(log.transactionHash);
-
-    await prisma.timestamp.upsert({
-      where: { id: uid },
-      update: {
-        timestamp,
-        from: tx.from,
-        txid: log.transactionHash,
-      },
-      create: {
-        id: uid,
-        timestamp,
-        from: tx.from,
-        txid: log.transactionHash,
-      },
-    });
+  if (logs.length === 0) {
+    return;
   }
+
+  // Fetch all transactions in parallel
+  const txPromises = logs.map((log) =>
+    limit(() => provider.getTransaction(log.transactionHash))
+  );
+  const transactions = await Promise.all(txPromises);
+
+  console.log(`Processing ${logs.length} timestamps`);
+
+  // Batch upsert using transaction
+  await prisma.$transaction(
+    logs.map((log, i) => {
+      const uid = log.topics[1];
+      const timestamp = ethers.BigNumber.from(log.topics[2]).toNumber();
+      const tx = transactions[i];
+
+      return prisma.timestamp.upsert({
+        where: { id: uid },
+        update: {
+          timestamp,
+          from: tx.from,
+          txid: log.transactionHash,
+        },
+        create: {
+          id: uid,
+          timestamp,
+          from: tx.from,
+          txid: log.transactionHash,
+        },
+      });
+    })
+  );
 }
 
 export async function processRevokedAttestation(
@@ -737,6 +854,14 @@ export async function updateDbFromRelevantLog(log: ethers.providers.Log) {
   }
 }
 
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  return `${hours}h ${mins}m`;
+}
+
 export async function getAndUpdateAllRelevantLogs() {
   const eventSignatures = [
     ethers.utils.id(revokedEventSignature),
@@ -745,6 +870,11 @@ export async function getAndUpdateAllRelevantLogs() {
     ethers.utils.id(timestampEventSignature),
   ];
 
+  const attestedSig = ethers.utils.id(attestedEventSignature);
+  const revokedSig = ethers.utils.id(revokedEventSignature);
+  const timestampSig = ethers.utils.id(timestampEventSignature);
+  const revokedOffchainSig = ethers.utils.id(revokedOffchainEventSignature);
+
   const serviceStatPropertyName = "latestAttestationBlockNum";
 
   const { fromBlock } = await getStartData(serviceStatPropertyName);
@@ -752,55 +882,116 @@ export async function getAndUpdateAllRelevantLogs() {
   let currentBlock = fromBlock + 1;
   const latestBlock = await provider.getBlockNumber();
 
+  // Progress tracking
+  const totalBlocks = latestBlock - currentBlock + 1;
+  const startTime = Date.now();
+  let blocksProcessed = 0;
+  let totalLogsProcessed = 0;
+
+  if (totalBlocks <= 0) {
+    console.log("Already up to date, no blocks to process");
+    return;
+  }
+
+  console.log(`\nStarting sync: ${totalBlocks.toLocaleString()} blocks to process (${currentBlock} → ${latestBlock})\n`);
+
   let allLogs: ethers.providers.Log[] = [];
 
   while (currentBlock <= latestBlock) {
     const toBlock = Math.min(currentBlock + batchSize - 1, latestBlock);
+    const batchBlocks = toBlock - currentBlock + 1;
+
+    // Calculate progress
+    const percent = ((blocksProcessed / totalBlocks) * 100).toFixed(1);
+    const elapsedSec = (Date.now() - startTime) / 1000;
+    const blocksPerSec = blocksProcessed > 0 ? blocksProcessed / elapsedSec : 0;
+    const remainingBlocks = totalBlocks - blocksProcessed;
+    const etaSec = blocksPerSec > 0 ? remainingBlocks / blocksPerSec : 0;
 
     console.log(
-      `Getting and updating all relevant logs from block ${currentBlock} to ${toBlock}`
+      `[${percent}%] Block ${currentBlock.toLocaleString()} → ${toBlock.toLocaleString()} | ` +
+      `${blocksProcessed.toLocaleString()}/${totalBlocks.toLocaleString()} blocks | ` +
+      `${Math.round(blocksPerSec).toLocaleString()} blocks/s | ` +
+      `ETA: ${formatDuration(etaSec)}`
     );
 
-    const schemaLogs = await provider.getLogs({
-      address: EASSchemaRegistryAddress,
-      fromBlock: currentBlock,
-      toBlock,
-      topics: [
-        [
-          ethers.utils.id(registeredEventSignatureV1),
-          ethers.utils.id(registeredEventSignatureV2),
+    // Fetch schema logs and EAS logs in parallel
+    const [schemaLogs, easLogs] = await Promise.all([
+      provider.getLogs({
+        address: EASSchemaRegistryAddress,
+        fromBlock: currentBlock,
+        toBlock,
+        topics: [
+          [
+            ethers.utils.id(registeredEventSignatureV1),
+            ethers.utils.id(registeredEventSignatureV2),
+          ],
         ],
-      ],
-    });
+      }),
+      provider.getLogs({
+        address: EASContractAddress,
+        fromBlock: currentBlock,
+        toBlock,
+        topics: [eventSignatures],
+      }),
+    ]);
 
-    allLogs = allLogs.concat(schemaLogs);
+    allLogs = allLogs.concat(schemaLogs, easLogs);
 
-    for (const log of schemaLogs) {
-      await updateDbFromRelevantLog(log);
-      await timeout(requestDelay);
+    // Process schemas first (attestations may reference them)
+    if (schemaLogs.length > 0) {
+      console.log(`Processing ${schemaLogs.length} schema logs in batch`);
+      await createSchemasFromLogs(schemaLogs);
     }
 
-    const easLogs = await provider.getLogs({
-      address: EASContractAddress,
-      fromBlock: currentBlock,
-      toBlock,
-      topics: [eventSignatures], // Filter by all event signatures
-    });
+    // Group EAS logs by event type for batch processing
+    const attestLogs = easLogs.filter((l) => l.topics[0] === attestedSig);
+    const revokeLogs = easLogs.filter((l) => l.topics[0] === revokedSig);
+    const timestampLogs = easLogs.filter((l) => l.topics[0] === timestampSig);
+    const offchainRevokeLogs = easLogs.filter(
+      (l) => l.topics[0] === revokedOffchainSig
+    );
 
-    allLogs = allLogs.concat(easLogs);
+    // Process each batch by type (more efficient than one-by-one dispatch)
+    if (attestLogs.length > 0) {
+      console.log(`Processing ${attestLogs.length} attestation logs in batch`);
+      await createAttestationsForLogs(attestLogs);
+    }
 
-    for (const log of easLogs) {
-      await updateDbFromRelevantLog(log);
-      await timeout(requestDelay);
+    if (revokeLogs.length > 0) {
+      console.log(`Processing ${revokeLogs.length} revocation logs in batch`);
+      await revokeAttestationsFromLogs(revokeLogs);
+    }
+
+    if (timestampLogs.length > 0) {
+      console.log(`Processing ${timestampLogs.length} timestamp logs in batch`);
+      await createTimestampForLogs(timestampLogs);
+    }
+
+    if (offchainRevokeLogs.length > 0) {
+      console.log(
+        `Processing ${offchainRevokeLogs.length} offchain revocation logs in batch`
+      );
+      await createOffchainRevocationsForLogs(offchainRevokeLogs);
     }
 
     await updateServiceStatToLastBlock(false, serviceStatPropertyName, toBlock);
+
+    // Update progress counters
+    blocksProcessed += batchBlocks;
+    totalLogsProcessed += schemaLogs.length + easLogs.length;
 
     currentBlock += batchSize;
     await timeout(requestDelay);
   }
 
-  console.log("total  logs", allLogs.length);
+  // Final summary
+  const totalElapsed = (Date.now() - startTime) / 1000;
+  console.log(`\n✓ Sync complete!`);
+  console.log(`  Blocks processed: ${blocksProcessed.toLocaleString()}`);
+  console.log(`  Logs processed: ${totalLogsProcessed.toLocaleString()}`);
+  console.log(`  Time elapsed: ${formatDuration(totalElapsed)}`);
+  console.log(`  Average speed: ${Math.round(blocksProcessed / totalElapsed).toLocaleString()} blocks/s\n`);
 }
 
 export async function updateDbFromEthTransaction(txId: string) {
