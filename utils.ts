@@ -24,6 +24,20 @@ const limit = pLimit(concurrencyLimit);
 // Add a constant for maximum retries
 const MAX_RETRIES = 5;
 
+// Reorg handling constants
+const REORG_DEPTH = Number(process.env.REORG_DEPTH) || 64;
+const RECENT_BLOCKS_KEY = "recentBlocks";
+
+interface BlockRecord {
+  number: number;
+  hash: string;
+  txids: string[];
+}
+
+interface RecentBlockHistory {
+  blocks: BlockRecord[];
+}
+
 export const CHAIN_ID = Number(process.env.CHAIN_ID);
 
 if (!CHAIN_ID) {
@@ -560,6 +574,127 @@ async function getStartData(serviceStatPropertyName: string) {
   return { latestBlockNumServiceStat, fromBlock };
 }
 
+// Reorg handling functions
+async function getRecentBlocks(): Promise<RecentBlockHistory> {
+  const stat = await prisma.serviceStat.findUnique({
+    where: { name: RECENT_BLOCKS_KEY },
+  });
+  return stat ? JSON.parse(stat.value) : { blocks: [] };
+}
+
+async function saveRecentBlocks(history: RecentBlockHistory): Promise<void> {
+  history.blocks = history.blocks.slice(0, REORG_DEPTH);
+  await prisma.serviceStat.upsert({
+    where: { name: RECENT_BLOCKS_KEY },
+    update: { value: JSON.stringify(history) },
+    create: { name: RECENT_BLOCKS_KEY, value: JSON.stringify(history) },
+  });
+}
+
+async function checkForReorg(
+  currentBlock: number,
+  history: RecentBlockHistory
+): Promise<{ reorged: boolean; reorgFromBlock?: number }> {
+  const previousBlockNum = currentBlock - 1;
+  const storedBlock = history.blocks.find((b) => b.number === previousBlockNum);
+
+  if (!storedBlock) {
+    return { reorged: false };
+  }
+
+  const chainBlock = await provider.getBlock(previousBlockNum);
+  if (!chainBlock) {
+    return { reorged: false };
+  }
+
+  if (chainBlock.hash === storedBlock.hash) {
+    return { reorged: false };
+  }
+
+  // Reorg detected - find the earliest affected block
+  let reorgFromBlock = storedBlock.number;
+
+  for (const stored of history.blocks) {
+    if (stored.number < reorgFromBlock) {
+      const block = await provider.getBlock(stored.number);
+      if (block && block.hash === stored.hash) {
+        break;
+      }
+      reorgFromBlock = stored.number;
+    }
+  }
+
+  return { reorged: true, reorgFromBlock };
+}
+
+async function deleteRecordsByTxids(txids: string[]): Promise<void> {
+  if (txids.length === 0) return;
+
+  console.log(`Deleting records from ${txids.length} transactions due to reorg`);
+
+  // Find schema name attestations to handle specially
+  const schemaNameAttestations = await prisma.attestation.findMany({
+    where: { txid: { in: txids }, schemaId: schemaNameUID },
+    select: { id: true, data: true, attester: true },
+  });
+
+  // Delete SchemaNames created by these attestations
+  for (const att of schemaNameAttestations) {
+    try {
+      const decoded = ethers.utils.defaultAbiCoder.decode(
+        ["bytes32", "string"],
+        att.data
+      );
+      await prisma.schemaName.deleteMany({
+        where: {
+          schemaId: decoded[0],
+          name: decoded[1],
+          attesterAddress: att.attester,
+        },
+      });
+    } catch {
+      // Ignore decode errors
+    }
+  }
+
+  // Delete in correct order for foreign key constraints
+  await prisma.$transaction([
+    prisma.attestation.deleteMany({ where: { txid: { in: txids } } }),
+    prisma.schema.deleteMany({ where: { txid: { in: txids } } }),
+    prisma.timestamp.deleteMany({ where: { txid: { in: txids } } }),
+    prisma.offchainRevocation.deleteMany({ where: { txid: { in: txids } } }),
+  ]);
+}
+
+function recordProcessedBlocks(
+  logs: ethers.providers.Log[],
+  history: RecentBlockHistory
+): void {
+  const blockMap = new Map<number, { hash: string; txids: Set<string> }>();
+
+  for (const log of logs) {
+    if (!blockMap.has(log.blockNumber)) {
+      blockMap.set(log.blockNumber, {
+        hash: log.blockHash,
+        txids: new Set(),
+      });
+    }
+    blockMap.get(log.blockNumber)!.txids.add(log.transactionHash);
+  }
+
+  for (const [blockNum, data] of blockMap) {
+    history.blocks = history.blocks.filter((b) => b.number !== blockNum);
+    history.blocks.unshift({
+      number: blockNum,
+      hash: data.hash,
+      txids: Array.from(data.txids),
+    });
+  }
+
+  history.blocks.sort((a, b) => b.number - a.number);
+  history.blocks = history.blocks.slice(0, REORG_DEPTH);
+}
+
 export async function updateDbFromRelevantLog(log: ethers.providers.Log) {
   if (log.address === EASSchemaRegistryAddress) {
     if (
@@ -629,7 +764,34 @@ export async function getAndUpdateAllRelevantLogs() {
 
   let allLogs: ethers.providers.Log[] = [];
 
+  // Load block history for reorg detection
+  const blockHistory = await getRecentBlocks();
+
   while (currentBlock <= latestBlock) {
+    // Check for reorg before processing
+    const { reorged, reorgFromBlock } = await checkForReorg(
+      currentBlock,
+      blockHistory
+    );
+
+    if (reorged && reorgFromBlock) {
+      console.log(`Reorg detected! Rolling back from block ${reorgFromBlock}`);
+
+      const affectedTxids = blockHistory.blocks
+        .filter((b) => b.number >= reorgFromBlock)
+        .flatMap((b) => b.txids);
+
+      await deleteRecordsByTxids(affectedTxids);
+
+      blockHistory.blocks = blockHistory.blocks.filter(
+        (b) => b.number < reorgFromBlock
+      );
+      currentBlock = reorgFromBlock;
+      await updateServiceStatToLastBlock(serviceStatPropertyName, reorgFromBlock - 1);
+
+      continue;
+    }
+
     const toBlock = Math.min(currentBlock + batchSize - 1, latestBlock);
     const batchBlocks = toBlock - currentBlock + 1;
 
@@ -707,6 +869,9 @@ export async function getAndUpdateAllRelevantLogs() {
       await createOffchainRevocationsForLogs(offchainRevokeLogs);
     }
 
+    // Record processed blocks for reorg detection
+    recordProcessedBlocks([...schemaLogs, ...easLogs], blockHistory);
+
     await updateServiceStatToLastBlock(serviceStatPropertyName, toBlock);
 
     // Update progress counters
@@ -716,6 +881,9 @@ export async function getAndUpdateAllRelevantLogs() {
     currentBlock += batchSize;
     await timeout(requestDelay);
   }
+
+  // Save block history for reorg detection
+  await saveRecentBlocks(blockHistory);
 
   // Final summary
   const totalElapsed = (Date.now() - startTime) / 1000;
