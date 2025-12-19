@@ -120,8 +120,7 @@ export const EAS_CHAIN_CONFIGS: EASChainConfig[] = [
     schemaRegistryAddress: "0x4200000000000000000000000000000000000020",
     contractStartBlock: 3701279,
     etherscanURL: "https://basescan.org/",
-    rpcProvider: `https://api.developer.coinbase.com/rpc/v1/base/HA0XO7OvdwZz2SByrZHiuquHnaz6-8ml`,
-    // rpcProvider: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_BASE_API_KEY}`,
+    rpcProvider: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_BASE_API_KEY}`,
   },
   {
     chainId: 59144,
