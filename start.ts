@@ -37,6 +37,7 @@ export async function update() {
 }
 
 function setGoTimeout() {
+  console.log(`Setting timeout for ${POLLING_INTERVAL / 1000} seconds`);
   if (timeout) {
     clearTimeout(timeout);
   }

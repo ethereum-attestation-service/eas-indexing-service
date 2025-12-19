@@ -417,7 +417,7 @@ export async function getFormattedAttestationFromLog(
     expirationTime: safeToNumber(expirationTime),
     time: time.toNumber(),
     txid: log.transactionHash,
-    revoked: revocationTime.lt(dayjs().unix()) && !revocationTime.isZero(),
+    revoked: !revocationTime.isZero(),
     isOffchain: false,
     ipfsHash: "",
     timeCreated: dayjs().unix(),
@@ -554,9 +554,7 @@ export async function createSchemasFromLogs(logs: ethers.providers.Log[]) {
   const newSchemas = schemas.filter((s) => !existingIdSet.has(s.id));
 
   if (newSchemas.length === 0) {
-    console.log(
-      `All ${schemas.length} schemas already exist, skipping`
-    );
+    console.log(`All ${schemas.length} schemas already exist, skipping`);
     return;
   }
 
@@ -851,7 +849,8 @@ export async function updateDbFromRelevantLog(log: ethers.providers.Log) {
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${Math.round(seconds)}s`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+  if (seconds < 3600)
+    return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
   const hours = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   return `${hours}h ${mins}m`;
@@ -888,7 +887,9 @@ export async function getAndUpdateAllRelevantLogs() {
     return;
   }
 
-  console.log(`\nStarting sync: ${totalBlocks.toLocaleString()} blocks to process (${currentBlock} → ${latestBlock})\n`);
+  console.log(
+    `\nStarting sync: ${totalBlocks.toLocaleString()} blocks to process (${currentBlock} → ${latestBlock})\n`
+  );
 
   let allLogs: ethers.providers.Log[] = [];
 
@@ -905,9 +906,9 @@ export async function getAndUpdateAllRelevantLogs() {
 
     console.log(
       `[${percent}%] Block ${currentBlock.toLocaleString()} → ${toBlock.toLocaleString()} | ` +
-      `${blocksProcessed.toLocaleString()}/${totalBlocks.toLocaleString()} blocks | ` +
-      `${Math.round(blocksPerSec).toLocaleString()} blocks/s | ` +
-      `ETA: ${formatDuration(etaSec)}`
+        `${blocksProcessed.toLocaleString()}/${totalBlocks.toLocaleString()} blocks | ` +
+        `${Math.round(blocksPerSec).toLocaleString()} blocks/s | ` +
+        `ETA: ${formatDuration(etaSec)}`
     );
 
     // Fetch schema logs and EAS logs in parallel
@@ -986,7 +987,11 @@ export async function getAndUpdateAllRelevantLogs() {
   console.log(`  Blocks processed: ${blocksProcessed.toLocaleString()}`);
   console.log(`  Logs processed: ${totalLogsProcessed.toLocaleString()}`);
   console.log(`  Time elapsed: ${formatDuration(totalElapsed)}`);
-  console.log(`  Average speed: ${Math.round(blocksProcessed / totalElapsed).toLocaleString()} blocks/s\n`);
+  console.log(
+    `  Average speed: ${Math.round(
+      blocksProcessed / totalElapsed
+    ).toLocaleString()} blocks/s\n`
+  );
 }
 
 export async function updateDbFromEthTransaction(txId: string) {
