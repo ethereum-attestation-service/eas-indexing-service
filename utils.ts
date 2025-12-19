@@ -784,26 +784,18 @@ export async function processCreatedAttestation(
 }
 
 export async function updateServiceStatToLastBlock(
-  shouldCreate: boolean,
   serviceStatPropertyName: string,
   lastBlock: number
 ) {
-  const existing = await prisma.serviceStat.findFirst({
-    where: { name: serviceStatPropertyName },
-  });
-
-  if (!existing || shouldCreate) {
-    await prisma.serviceStat.create({
-      data: { name: serviceStatPropertyName, value: lastBlock.toString() },
-    });
-  } else {
-    if (lastBlock !== 0 && lastBlock > Number(existing.value)) {
-      await prisma.serviceStat.update({
-        where: { name: serviceStatPropertyName },
-        data: { value: lastBlock.toString() },
-      });
-    }
+  if (lastBlock === 0) {
+    return;
   }
+
+  await prisma.serviceStat.upsert({
+    where: { name: serviceStatPropertyName },
+    update: { value: lastBlock.toString() },
+    create: { name: serviceStatPropertyName, value: lastBlock.toString() },
+  });
 }
 
 async function getStartData(serviceStatPropertyName: string) {
@@ -971,7 +963,7 @@ export async function getAndUpdateAllRelevantLogs() {
       await createOffchainRevocationsForLogs(offchainRevokeLogs);
     }
 
-    await updateServiceStatToLastBlock(false, serviceStatPropertyName, toBlock);
+    await updateServiceStatToLastBlock(serviceStatPropertyName, toBlock);
 
     // Update progress counters
     blocksProcessed += batchBlocks;
