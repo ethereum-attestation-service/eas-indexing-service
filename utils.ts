@@ -5,7 +5,6 @@ import dayjs from "dayjs";
 import pLimit from "p-limit";
 import { Eas__factory, EasSchema__factory } from "./types/ethers-contracts";
 import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
-import * as fs from "fs";
 
 const batchSize = process.env.BATCH_SIZE
   ? Number(process.env.BATCH_SIZE)
@@ -362,10 +361,9 @@ export async function getFormattedAttestationFromLog(
 
   do {
     if (tries > MAX_RETRIES) {
-      console.log(
-        `Max retries reached for log ${log.transactionHash}. Skipping...`
+      throw new Error(
+        `Max retries reached for attestation in tx ${log.transactionHash}. Failing batch to retry later.`
       );
-      return null; // Exit the loop and return null after max retries
     }
 
     [
@@ -397,7 +395,9 @@ export async function getFormattedAttestationFromLog(
     });
 
     if (!schema) {
-      return null;
+      throw new Error(
+        `Schema ${schemaUID} not found in DB for attestation in tx ${log.transactionHash}. Failing batch to retry.`
+      );
     }
 
     const schemaEncoder = new SchemaEncoder(schema.schema);
@@ -496,20 +496,15 @@ export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
     existingIdSet.has(a[0])
   );
 
-  // Log any missing attestations
+  // Check for missing attestations - this shouldn't happen since attestations are processed before revocations
   const missingAttestations = chainAttestations.filter(
     (a) => !existingIdSet.has(a[0])
   );
   if (missingAttestations.length > 0) {
-    console.log(
-      `${missingAttestations.length} attestations not found in DB for revocation`
+    const missingIds = missingAttestations.map((a) => a[0]).join(", ");
+    throw new Error(
+      `${missingAttestations.length} attestations not found in DB for revocation: ${missingIds}. This indicates a bug in the indexer.`
     );
-    for (const att of missingAttestations) {
-      fs.appendFileSync(
-        "attestations_not_found_for_revoke.txt",
-        `${att[0]}\n`
-      );
-    }
   }
 
   if (validRevocations.length === 0) {
