@@ -73,4 +73,7 @@ if (!DISABLE_LISTENER) {
 
 go();
 setGoTimeout();
-startGraph();
+
+if (!process.env.DATABASE_READ_ONLY_URL) {
+  startGraph();
+}
