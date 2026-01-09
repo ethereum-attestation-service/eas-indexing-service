@@ -739,10 +739,45 @@ async function checkForReorg(
   return { reorged: true, reorgFromBlock };
 }
 
-async function deleteRecordsByTxids(txids: string[]): Promise<void> {
-  if (txids.length === 0) return;
+async function deleteRecordsByTxids(
+  txids: string[],
+  affectedBlockNumbers: number[]
+): Promise<void> {
+  if (txids.length === 0 && affectedBlockNumbers.length === 0) return;
 
-  console.log(`Deleting records from ${txids.length} transactions due to reorg`);
+  console.log(
+    `Rolling back reorg: ${affectedBlockNumbers.length} blocks, ${txids.length} transactions`
+  );
+
+  // Reset revocations that happened in affected blocks
+  if (affectedBlockNumbers.length > 0) {
+    const blockTimestamps = await Promise.all(
+      affectedBlockNumbers.map(async (blockNum) => {
+        const block = await provider.getBlock(blockNum);
+        return block?.timestamp;
+      })
+    );
+    const validTimestamps = blockTimestamps.filter((t): t is number => t != null);
+
+    if (validTimestamps.length > 0) {
+      const result = await prisma.attestation.updateMany({
+        where: {
+          revoked: true,
+          revocationTime: { in: validTimestamps },
+        },
+        data: {
+          revoked: false,
+          revocationTime: 0,
+        },
+      });
+      if (result.count > 0) {
+        console.log(`Reset ${result.count} revocations due to reorg`);
+      }
+    }
+  }
+
+  // Skip txid-based deletions if no txids
+  if (txids.length === 0) return;
 
   // Find schema name attestations to handle specially
   const schemaNameAttestations = await prisma.attestation.findMany({
@@ -886,11 +921,13 @@ export async function getAndUpdateAllRelevantLogs() {
     if (reorged && reorgFromBlock) {
       console.log(`Reorg detected! Rolling back from block ${reorgFromBlock}`);
 
-      const affectedTxids = blockHistory.blocks
-        .filter((b) => b.number >= reorgFromBlock)
-        .flatMap((b) => b.txids);
+      const affectedBlocks = blockHistory.blocks.filter(
+        (b) => b.number >= reorgFromBlock
+      );
+      const affectedTxids = affectedBlocks.flatMap((b) => b.txids);
+      const affectedBlockNumbers = affectedBlocks.map((b) => b.number);
 
-      await deleteRecordsByTxids(affectedTxids);
+      await deleteRecordsByTxids(affectedTxids, affectedBlockNumbers);
 
       blockHistory.blocks = blockHistory.blocks.filter(
         (b) => b.number < reorgFromBlock
