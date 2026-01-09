@@ -321,10 +321,12 @@ export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
   const uniqueBlocks = [...new Set(logs.map((l) => l.blockNumber))];
   const blockTimestamps = new Map<number, number>();
   await Promise.all(
-    uniqueBlocks.map(async (blockNum) => {
-      const block = await provider.getBlock(blockNum);
-      blockTimestamps.set(blockNum, block.timestamp);
-    })
+    uniqueBlocks.map((blockNum) =>
+      limit(async () => {
+        const block = await provider.getBlock(blockNum);
+        blockTimestamps.set(blockNum, block.timestamp);
+      })
+    )
   );
 
   // 5. Update all attestations with revocation
@@ -631,6 +633,19 @@ export async function processCreatedAttestation(
 
       if (!schema) {
         console.log("Error: Schema doesnt exist!");
+        return;
+      }
+
+      // Check if schema name already exists (handles reprocessing)
+      const existingName = await prisma.schemaName.findFirst({
+        where: {
+          schemaId: schema.id,
+          name: decodedNameAttestationData[1],
+          attesterAddress: attestation.attester,
+        },
+      });
+
+      if (existingName) {
         return;
       }
 
