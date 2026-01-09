@@ -685,8 +685,6 @@ export async function getAndUpdateAllRelevantLogs() {
     `\nStarting sync: ${totalBlocks.toLocaleString()} blocks to process (${currentBlock} → ${latestBlock})\n`
   );
 
-  let allLogs: ethers.providers.Log[] = [];
-
   while (currentBlock <= latestBlock) {
     const toBlock = Math.min(currentBlock + batchSize - 1, latestBlock);
     const batchBlocks = toBlock - currentBlock + 1;
@@ -725,8 +723,6 @@ export async function getAndUpdateAllRelevantLogs() {
         topics: [eventSignatures],
       }),
     ]);
-
-    allLogs = allLogs.concat(schemaLogs, easLogs);
 
     // Process schemas first (attestations may reference them)
     if (schemaLogs.length > 0) {
