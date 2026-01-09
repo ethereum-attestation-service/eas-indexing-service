@@ -767,10 +767,12 @@ async function deleteRecordsByTxids(
   // Reset revocations that happened in affected blocks
   if (affectedBlockNumbers.length > 0) {
     const blockTimestamps = await Promise.all(
-      affectedBlockNumbers.map(async (blockNum) => {
-        const block = await provider.getBlock(blockNum);
-        return block?.timestamp;
-      })
+      affectedBlockNumbers.map((blockNum) =>
+        limit(async () => {
+          const block = await provider.getBlock(blockNum);
+          return block?.timestamp;
+        })
+      )
     );
     const validTimestamps = blockTimestamps.filter((t): t is number => t != null);
 
@@ -828,10 +830,11 @@ async function deleteRecordsByTxids(
   ]);
 }
 
-function recordProcessedBlocks(
+async function recordProcessedBlocks(
   logs: ethers.providers.Log[],
-  history: RecentBlockHistory
-): void {
+  history: RecentBlockHistory,
+  toBlock: number
+): Promise<void> {
   const blockMap = new Map<number, { hash: string; txids: Set<string> }>();
 
   for (const log of logs) {
@@ -842,6 +845,14 @@ function recordProcessedBlocks(
       });
     }
     blockMap.get(log.blockNumber)!.txids.add(log.transactionHash);
+  }
+
+  // Always record the last block in batch for reorg detection (even if no logs)
+  if (!blockMap.has(toBlock)) {
+    const block = await provider.getBlock(toBlock);
+    if (block) {
+      blockMap.set(toBlock, { hash: block.hash, txids: new Set() });
+    }
   }
 
   for (const [blockNum, data] of blockMap) {
@@ -1029,7 +1040,7 @@ export async function getAndUpdateAllRelevantLogs() {
     }
 
     // Record processed blocks for reorg detection
-    recordProcessedBlocks([...schemaLogs, ...easLogs], blockHistory);
+    await recordProcessedBlocks([...schemaLogs, ...easLogs], blockHistory, toBlock);
 
     await updateServiceStatToLastBlock(serviceStatPropertyName, toBlock);
 
