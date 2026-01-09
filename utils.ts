@@ -273,12 +273,15 @@ export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
   // 1. Extract attestation IDs directly from logs (no RPC needed)
   const attestationIds = logs.map((log) => log.data);
 
-  // 2. Check which exist in DB
+  // 2. Check which exist in DB and their revocation status
   const existingAttestations = await prisma.attestation.findMany({
     where: { id: { in: attestationIds } },
-    select: { id: true },
+    select: { id: true, revoked: true },
   });
   const existingIdSet = new Set(existingAttestations.map((a) => a.id));
+  const alreadyRevokedSet = new Set(
+    existingAttestations.filter((a) => a.revoked).map((a) => a.id)
+  );
 
   // 3. Find missing attestations and backfill them (only these need RPC calls)
   const missingLogs = logs.filter((log) => !existingIdSet.has(log.data));
@@ -303,8 +306,18 @@ export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
     backfilledCount = backfillAttestations.length;
   }
 
-  // 4. Get block timestamps for revocation times (batch by unique blocks)
-  const uniqueBlocks = [...new Set(logs.map((l) => l.blockNumber))];
+  // 4. Filter to only attestations needing revocation
+  const logsNeedingRevocation = logs.filter(
+    (log) => !alreadyRevokedSet.has(log.data)
+  );
+
+  if (logsNeedingRevocation.length === 0) {
+    console.log(`All ${logs.length} revocations already processed, skipping`);
+    return { processed: 0, backfilled: backfilledCount };
+  }
+
+  // 5. Get block timestamps for revocation times (batch by unique blocks)
+  const uniqueBlocks = [...new Set(logsNeedingRevocation.map((l) => l.blockNumber))];
   const blockTimestamps = new Map<number, number>();
   await Promise.all(
     uniqueBlocks.map((blockNum) =>
@@ -315,10 +328,10 @@ export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
     )
   );
 
-  // 5. Update all attestations with revocation
-  console.log(`Processing ${logs.length} revocations`);
+  // 6. Update attestations with revocation
+  console.log(`Processing ${logsNeedingRevocation.length} revocations (${logs.length - logsNeedingRevocation.length} already revoked)`);
   const updatedAttestations = await prisma.$transaction(
-    logs.map((log) =>
+    logsNeedingRevocation.map((log) =>
       prisma.attestation.update({
         where: { id: log.data },
         data: {
@@ -334,7 +347,7 @@ export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
     await processRevokedAttestation(attestation);
   }
 
-  return { processed: logs.length, backfilled: backfilledCount };
+  return { processed: logsNeedingRevocation.length, backfilled: backfilledCount };
 }
 
 export async function createSchemasFromLogs(logs: ethers.providers.Log[]) {
