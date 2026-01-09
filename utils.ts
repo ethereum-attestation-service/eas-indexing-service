@@ -85,6 +85,57 @@ function timeout(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Helper to create attestation from chain data (for backfilling missing attestations)
+async function createAttestationFromChainData(
+  chainAttestation: Awaited<ReturnType<typeof easContract.getAttestation>>,
+  txid: string
+): Promise<Attestation> {
+  const [
+    UID,
+    schemaUID,
+    time,
+    expirationTime,
+    revocationTime,
+    refUID,
+    recipient,
+    attester,
+    revocable,
+    data,
+  ] = chainAttestation;
+
+  let decodedDataJson = "";
+  try {
+    const schema = await prisma.schema.findUnique({
+      where: { id: schemaUID },
+    });
+    if (schema) {
+      const schemaEncoder = new SchemaEncoder(schema.schema);
+      decodedDataJson = JSON.stringify(schemaEncoder.decodeData(data));
+    }
+  } catch (error) {
+    console.log("Error decoding data during backfill", error);
+  }
+
+  return {
+    id: UID,
+    schemaId: schemaUID,
+    data,
+    attester,
+    recipient,
+    refUID,
+    revocationTime: safeToNumber(revocationTime),
+    expirationTime: safeToNumber(expirationTime),
+    time: time.toNumber(),
+    txid,
+    revoked: !revocationTime.isZero(),
+    isOffchain: false,
+    ipfsHash: "",
+    timeCreated: dayjs().unix(),
+    revocable,
+    decodedDataJson,
+  };
+}
+
 const safeToNumber = (num: ethers.BigNumber) => {
   try {
     const tmpNum = num.toNumber();
@@ -230,55 +281,61 @@ export async function getFormattedSchemaFromLog(
 
 export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
   if (logs.length === 0) {
-    return;
+    return { processed: 0, backfilled: 0 };
   }
 
-  // Fetch all attestation data from chain in parallel
-  const attestationPromises = logs.map((log) =>
-    limit(() => easContract.getAttestation(log.data))
-  );
-  const chainAttestations = await Promise.all(attestationPromises);
+  // 1. Extract attestation IDs directly from logs (no RPC needed)
+  const attestationIds = logs.map((log) => log.data);
 
-  // Get all attestation IDs
-  const attestationIds = chainAttestations.map((a) => a[0]);
-
-  // Batch check which attestations exist in DB
+  // 2. Check which exist in DB
   const existingAttestations = await prisma.attestation.findMany({
     where: { id: { in: attestationIds } },
     select: { id: true },
   });
   const existingIdSet = new Set(existingAttestations.map((a) => a.id));
 
-  // Filter to only attestations that exist in DB
-  const validRevocations = chainAttestations.filter((a) =>
-    existingIdSet.has(a[0])
-  );
+  // 3. Find missing attestations and backfill them (only these need RPC calls)
+  const missingLogs = logs.filter((log) => !existingIdSet.has(log.data));
+  let backfilledCount = 0;
 
-  // Check for missing attestations - this shouldn't happen since attestations are processed before revocations
-  const missingAttestations = chainAttestations.filter(
-    (a) => !existingIdSet.has(a[0])
-  );
-  if (missingAttestations.length > 0) {
-    const missingIds = missingAttestations.map((a) => a[0]).join(", ");
-    throw new Error(
-      `${missingAttestations.length} attestations not found in DB for revocation: ${missingIds}. This indicates a bug in the indexer.`
+  if (missingLogs.length > 0) {
+    console.log(
+      `Backfilling ${missingLogs.length} missing attestations before revocation`
     );
+    const chainAttestations = await Promise.all(
+      missingLogs.map((log) => limit(() => easContract.getAttestation(log.data)))
+    );
+    const backfillAttestations = await Promise.all(
+      chainAttestations.map((a, i) =>
+        createAttestationFromChainData(a, missingLogs[i].transactionHash)
+      )
+    );
+    await prisma.attestation.createMany({
+      data: backfillAttestations,
+      skipDuplicates: true,
+    });
+    backfilledCount = backfillAttestations.length;
   }
 
-  if (validRevocations.length === 0) {
-    return;
-  }
+  // 4. Get block timestamps for revocation times (batch by unique blocks)
+  const uniqueBlocks = [...new Set(logs.map((l) => l.blockNumber))];
+  const blockTimestamps = new Map<number, number>();
+  await Promise.all(
+    uniqueBlocks.map(async (blockNum) => {
+      const block = await provider.getBlock(blockNum);
+      blockTimestamps.set(blockNum, block.timestamp);
+    })
+  );
 
-  console.log(`Processing ${validRevocations.length} revocations`);
-
-  // Batch update all attestations using transaction
+  // 5. Update all attestations with revocation
+  console.log(`Processing ${logs.length} revocations`);
   const updatedAttestations = await prisma.$transaction(
-    validRevocations.map((attestation) =>
+    logs.map((log) =>
       prisma.attestation.update({
-        where: { id: attestation[0] },
+        where: { id: log.data },
         data: {
           revoked: true,
-          revocationTime: attestation.revocationTime.toNumber(),
+          revocationTime: blockTimestamps.get(log.blockNumber)!,
         },
       })
     )
@@ -288,45 +345,49 @@ export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
   for (const attestation of updatedAttestations) {
     await processRevokedAttestation(attestation);
   }
+
+  return { processed: logs.length, backfilled: backfilledCount };
 }
 
 export async function createSchemasFromLogs(logs: ethers.providers.Log[]) {
-  const promises = logs.map((log) =>
-    limit(() => getFormattedSchemaFromLog(log))
-  );
-
-  const schemas = await Promise.all(promises);
-
-  if (schemas.length === 0) {
-    return;
+  if (logs.length === 0) {
+    return { created: 0, existed: 0 };
   }
 
-  // Get existing schema IDs in one query
+  // 1. Extract schema IDs from logs (no RPC needed)
+  const schemaIds = logs.map((log) => log.topics[1]);
+
+  // 2. Check which exist in DB
   const existingIds = await prisma.schema.findMany({
-    where: { id: { in: schemas.map((s) => s.id) } },
+    where: { id: { in: schemaIds } },
     select: { id: true },
   });
   const existingIdSet = new Set(existingIds.map((s) => s.id));
 
-  // Filter to only new schemas
-  const newSchemas = schemas.filter((s) => !existingIdSet.has(s.id));
+  // 3. Filter to only logs for new schemas
+  const missingLogs = logs.filter((log) => !existingIdSet.has(log.topics[1]));
 
-  if (newSchemas.length === 0) {
-    console.log(`All ${schemas.length} schemas already exist, skipping`);
-    return;
+  if (missingLogs.length === 0) {
+    console.log(`All ${logs.length} schemas already exist, skipping`);
+    return { created: 0, existed: existingIdSet.size };
   }
+
+  // 4. Only fetch chain data for missing schemas
+  const schemas = await Promise.all(
+    missingLogs.map((log) => limit(() => getFormattedSchemaFromLog(log)))
+  );
 
   // Get current count once for indexing
   const schemaCount = await prisma.schema.count();
 
   // Add index to each new schema
-  const schemasWithIndex = newSchemas.map((schema, i) => ({
+  const schemasWithIndex = schemas.map((schema, i) => ({
     ...schema,
     index: (schemaCount + i + 1).toString(),
   }));
 
   console.log(
-    `Creating ${newSchemas.length} new schemas (${existingIdSet.size} already existed)`
+    `Creating ${schemas.length} new schemas (${existingIdSet.size} already existed)`
   );
 
   // Batch insert all new schemas
@@ -334,72 +395,101 @@ export async function createSchemasFromLogs(logs: ethers.providers.Log[]) {
     data: schemasWithIndex,
     skipDuplicates: true,
   });
+
+  return { created: schemas.length, existed: existingIdSet.size };
 }
 
 export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
-  const promises = logs.map((log) =>
-    limit(() => getFormattedAttestationFromLog(log))
-  );
+  if (logs.length === 0) {
+    return { created: 0, existed: 0 };
+  }
 
-  const attestations = await Promise.all(promises);
+  // 1. Extract attestation IDs from logs (no RPC needed)
+  const attestationIds = logs.map((log) => log.data);
+
+  // 2. Check which exist in DB
+  const existingIds = await prisma.attestation.findMany({
+    where: { id: { in: attestationIds } },
+    select: { id: true },
+  });
+  const existingIdSet = new Set(existingIds.map((a) => a.id));
+
+  // 3. Filter to only logs for new attestations
+  const missingLogs = logs.filter((log) => !existingIdSet.has(log.data));
+
+  if (missingLogs.length === 0) {
+    console.log(
+      `All ${logs.length} attestations already exist, skipping`
+    );
+    return { created: 0, existed: existingIdSet.size };
+  }
+
+  // 4. Only fetch chain data for missing attestations
+  const attestations = await Promise.all(
+    missingLogs.map((log) => limit(() => getFormattedAttestationFromLog(log)))
+  );
   const validAttestations = attestations.filter(
     (a): a is Attestation => a !== null
   );
 
   if (validAttestations.length === 0) {
-    return;
-  }
-
-  // Get existing attestation IDs in one query to avoid N+1
-  const existingIds = await prisma.attestation.findMany({
-    where: { id: { in: validAttestations.map((a) => a.id) } },
-    select: { id: true },
-  });
-  const existingIdSet = new Set(existingIds.map((a) => a.id));
-
-  // Filter to only new attestations
-  const newAttestations = validAttestations.filter(
-    (a) => !existingIdSet.has(a.id)
-  );
-
-  if (newAttestations.length === 0) {
-    console.log(
-      `All ${validAttestations.length} attestations already exist, skipping`
-    );
-    return;
+    return { created: 0, existed: existingIdSet.size };
   }
 
   console.log(
-    `Creating ${newAttestations.length} new attestations (${existingIdSet.size} already existed)`
+    `Creating ${validAttestations.length} new attestations (${existingIdSet.size} already existed)`
   );
 
   // Batch insert all new attestations
   await prisma.attestation.createMany({
-    data: newAttestations,
+    data: validAttestations,
     skipDuplicates: true,
   });
 
   // Process schema names for newly created attestations
-  for (const attestation of newAttestations) {
+  for (const attestation of validAttestations) {
     await processCreatedAttestation(attestation);
   }
+
+  return { created: validAttestations.length, existed: existingIdSet.size };
 }
 
 export async function createOffchainRevocationsForLogs(
   logs: ethers.providers.Log[]
 ) {
   if (logs.length === 0) {
-    return;
+    return { created: 0, existed: 0 };
   }
 
-  // Fetch all transactions in parallel
-  const txPromises = logs.map((log) =>
-    limit(() => provider.getTransaction(log.transactionHash))
-  );
-  const transactions = await Promise.all(txPromises);
+  // 1. Extract UIDs from logs (no RPC needed)
+  const uids = logs.map((log) => log.topics[2]);
 
-  // Prepare all revocation data
-  const revocationData = logs.map((log, i) => {
+  // 2. Check which offchain revocations already exist
+  const existingRevocations = await prisma.offchainRevocation.findMany({
+    where: { uid: { in: uids } },
+    select: { uid: true },
+  });
+  const existingUidSet = new Set(existingRevocations.map((r) => r.uid));
+
+  // 3. Filter to only logs for new revocations
+  const missingLogs = logs.filter((log) => !existingUidSet.has(log.topics[2]));
+
+  if (missingLogs.length === 0) {
+    console.log(
+      `All ${logs.length} offchain revocations already exist, skipping`
+    );
+    return { created: 0, existed: existingUidSet.size };
+  }
+
+  // 4. Only fetch transactions for new revocations
+  const transactions = await Promise.all(
+    missingLogs.map((log) =>
+      limit(() => provider.getTransaction(log.transactionHash))
+    )
+  );
+
+  // Prepare revocation data
+  const revocationData = missingLogs.map((log, i) => {
     const uid = log.topics[2];
     const timestamp = ethers.BigNumber.from(log.topics[3]).toNumber();
     const tx = transactions[i];
@@ -411,7 +501,9 @@ export async function createOffchainRevocationsForLogs(
     };
   });
 
-  console.log(`Creating ${revocationData.length} offchain revocations`);
+  console.log(
+    `Creating ${revocationData.length} offchain revocations (${existingUidSet.size} already existed)`
+  );
 
   // Batch create revocations
   await prisma.offchainRevocation.createMany({
@@ -431,44 +523,64 @@ export async function createOffchainRevocationsForLogs(
       })
     )
   );
+
+  return { created: revocationData.length, existed: existingUidSet.size };
 }
 
 export async function createTimestampForLogs(logs: ethers.providers.Log[]) {
   if (logs.length === 0) {
-    return;
+    return { created: 0, existed: 0 };
   }
 
-  // Fetch all transactions in parallel
-  const txPromises = logs.map((log) =>
-    limit(() => provider.getTransaction(log.transactionHash))
+  // 1. Extract IDs from logs (no RPC needed)
+  const timestampIds = logs.map((log) => log.topics[1]);
+
+  // 2. Check which timestamps already exist
+  const existingTimestamps = await prisma.timestamp.findMany({
+    where: { id: { in: timestampIds } },
+    select: { id: true },
+  });
+  const existingIdSet = new Set(existingTimestamps.map((t) => t.id));
+
+  // 3. Filter to only logs for new timestamps
+  const missingLogs = logs.filter((log) => !existingIdSet.has(log.topics[1]));
+
+  if (missingLogs.length === 0) {
+    console.log(`All ${logs.length} timestamps already exist, skipping`);
+    return { created: 0, existed: existingIdSet.size };
+  }
+
+  // 4. Only fetch transactions for new timestamps
+  const transactions = await Promise.all(
+    missingLogs.map((log) =>
+      limit(() => provider.getTransaction(log.transactionHash))
+    )
   );
-  const transactions = await Promise.all(txPromises);
 
-  console.log(`Processing ${logs.length} timestamps`);
+  // Prepare timestamp data
+  const timestampData = missingLogs.map((log, i) => {
+    const uid = log.topics[1];
+    const timestamp = ethers.BigNumber.from(log.topics[2]).toNumber();
+    const tx = transactions[i];
+    return {
+      id: uid,
+      timestamp,
+      from: tx.from,
+      txid: log.transactionHash,
+    };
+  });
 
-  // Batch upsert using transaction
-  await prisma.$transaction(
-    logs.map((log, i) => {
-      const uid = log.topics[1];
-      const timestamp = ethers.BigNumber.from(log.topics[2]).toNumber();
-      const tx = transactions[i];
-
-      return prisma.timestamp.upsert({
-        where: { id: uid },
-        update: {
-          timestamp,
-          from: tx.from,
-          txid: log.transactionHash,
-        },
-        create: {
-          id: uid,
-          timestamp,
-          from: tx.from,
-          txid: log.transactionHash,
-        },
-      });
-    })
+  console.log(
+    `Creating ${timestampData.length} timestamps (${existingIdSet.size} already existed)`
   );
+
+  // Batch create timestamps
+  await prisma.timestamp.createMany({
+    data: timestampData,
+    skipDuplicates: true,
+  });
+
+  return { created: timestampData.length, existed: existingIdSet.size };
 }
 
 export async function processRevokedAttestation(
@@ -762,11 +874,8 @@ export async function getAndUpdateAllRelevantLogs() {
     `\nStarting sync: ${totalBlocks.toLocaleString()} blocks to process (${currentBlock} → ${latestBlock})\n`
   );
 
-  let allLogs: ethers.providers.Log[] = [];
-
   // Load block history for reorg detection
   const blockHistory = await getRecentBlocks();
-
   while (currentBlock <= latestBlock) {
     // Check for reorg before processing
     const { reorged, reorgFromBlock } = await checkForReorg(
@@ -829,8 +938,6 @@ export async function getAndUpdateAllRelevantLogs() {
         topics: [eventSignatures],
       }),
     ]);
-
-    allLogs = allLogs.concat(schemaLogs, easLogs);
 
     // Process schemas first (attestations may reference them)
     if (schemaLogs.length > 0) {
