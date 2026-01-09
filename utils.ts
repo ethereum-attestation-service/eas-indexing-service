@@ -267,7 +267,7 @@ export async function getFormattedSchemaFromLog(
 
 export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
   if (logs.length === 0) {
-    return;
+    return { processed: 0, backfilled: 0 };
   }
 
   // 1. Extract attestation IDs directly from logs (no RPC needed)
@@ -282,6 +282,7 @@ export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
 
   // 3. Find missing attestations and backfill them (only these need RPC calls)
   const missingLogs = logs.filter((log) => !existingIdSet.has(log.data));
+  let backfilledCount = 0;
 
   if (missingLogs.length > 0) {
     console.log(
@@ -299,6 +300,7 @@ export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
       data: backfillAttestations,
       skipDuplicates: true,
     });
+    backfilledCount = backfillAttestations.length;
   }
 
   // 4. Get block timestamps for revocation times (batch by unique blocks)
@@ -329,11 +331,13 @@ export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
   for (const attestation of updatedAttestations) {
     await processRevokedAttestation(attestation);
   }
+
+  return { processed: logs.length, backfilled: backfilledCount };
 }
 
 export async function createSchemasFromLogs(logs: ethers.providers.Log[]) {
   if (logs.length === 0) {
-    return;
+    return { created: 0, existed: 0 };
   }
 
   // 1. Extract schema IDs from logs (no RPC needed)
@@ -351,7 +355,7 @@ export async function createSchemasFromLogs(logs: ethers.providers.Log[]) {
 
   if (missingLogs.length === 0) {
     console.log(`All ${logs.length} schemas already exist, skipping`);
-    return;
+    return { created: 0, existed: existingIdSet.size };
   }
 
   // 4. Only fetch chain data for missing schemas
@@ -377,11 +381,13 @@ export async function createSchemasFromLogs(logs: ethers.providers.Log[]) {
     data: schemasWithIndex,
     skipDuplicates: true,
   });
+
+  return { created: schemas.length, existed: existingIdSet.size };
 }
 
 export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
   if (logs.length === 0) {
-    return;
+    return { created: 0, existed: 0 };
   }
 
   // 1. Extract attestation IDs from logs (no RPC needed)
@@ -401,7 +407,7 @@ export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
     console.log(
       `All ${logs.length} attestations already exist, skipping`
     );
-    return;
+    return { created: 0, existed: existingIdSet.size };
   }
 
   // 4. Only fetch chain data for missing attestations
@@ -413,7 +419,7 @@ export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
   );
 
   if (validAttestations.length === 0) {
-    return;
+    return { created: 0, existed: existingIdSet.size };
   }
 
   console.log(
@@ -430,13 +436,15 @@ export async function createAttestationsForLogs(logs: ethers.providers.Log[]) {
   for (const attestation of validAttestations) {
     await processCreatedAttestation(attestation);
   }
+
+  return { created: validAttestations.length, existed: existingIdSet.size };
 }
 
 export async function createOffchainRevocationsForLogs(
   logs: ethers.providers.Log[]
 ) {
   if (logs.length === 0) {
-    return;
+    return { created: 0, existed: 0 };
   }
 
   // 1. Extract UIDs from logs (no RPC needed)
@@ -456,7 +464,7 @@ export async function createOffchainRevocationsForLogs(
     console.log(
       `All ${logs.length} offchain revocations already exist, skipping`
     );
-    return;
+    return { created: 0, existed: existingUidSet.size };
   }
 
   // 4. Only fetch transactions for new revocations
@@ -501,11 +509,13 @@ export async function createOffchainRevocationsForLogs(
       })
     )
   );
+
+  return { created: revocationData.length, existed: existingUidSet.size };
 }
 
 export async function createTimestampForLogs(logs: ethers.providers.Log[]) {
   if (logs.length === 0) {
-    return;
+    return { created: 0, existed: 0 };
   }
 
   // 1. Extract IDs from logs (no RPC needed)
@@ -523,7 +533,7 @@ export async function createTimestampForLogs(logs: ethers.providers.Log[]) {
 
   if (missingLogs.length === 0) {
     console.log(`All ${logs.length} timestamps already exist, skipping`);
-    return;
+    return { created: 0, existed: existingIdSet.size };
   }
 
   // 4. Only fetch transactions for new timestamps
@@ -555,6 +565,8 @@ export async function createTimestampForLogs(logs: ethers.providers.Log[]) {
     data: timestampData,
     skipDuplicates: true,
   });
+
+  return { created: timestampData.length, existed: existingIdSet.size };
 }
 
 export async function processRevokedAttestation(
