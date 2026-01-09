@@ -71,6 +71,57 @@ function timeout(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Helper to create attestation from chain data (for backfilling missing attestations)
+async function createAttestationFromChainData(
+  chainAttestation: Awaited<ReturnType<typeof easContract.getAttestation>>,
+  txid: string
+): Promise<Attestation> {
+  const [
+    UID,
+    schemaUID,
+    time,
+    expirationTime,
+    revocationTime,
+    refUID,
+    recipient,
+    attester,
+    revocable,
+    data,
+  ] = chainAttestation;
+
+  let decodedDataJson = "";
+  try {
+    const schema = await prisma.schema.findUnique({
+      where: { id: schemaUID },
+    });
+    if (schema) {
+      const schemaEncoder = new SchemaEncoder(schema.schema);
+      decodedDataJson = JSON.stringify(schemaEncoder.decodeData(data));
+    }
+  } catch (error) {
+    console.log("Error decoding data during backfill", error);
+  }
+
+  return {
+    id: UID,
+    schemaId: schemaUID,
+    data,
+    attester,
+    recipient,
+    refUID,
+    revocationTime: safeToNumber(revocationTime),
+    expirationTime: safeToNumber(expirationTime),
+    time: time.toNumber(),
+    txid,
+    revoked: !revocationTime.isZero(),
+    isOffchain: false,
+    ipfsHash: "",
+    timeCreated: dayjs().unix(),
+    revocable,
+    decodedDataJson,
+  };
+}
+
 const safeToNumber = (num: ethers.BigNumber) => {
   try {
     const tmpNum = num.toNumber();
@@ -235,31 +286,38 @@ export async function revokeAttestationsFromLogs(logs: ethers.providers.Log[]) {
   });
   const existingIdSet = new Set(existingAttestations.map((a) => a.id));
 
-  // Filter to only attestations that exist in DB
-  const validRevocations = chainAttestations.filter((a) =>
-    existingIdSet.has(a[0])
-  );
+  // Find missing attestations and backfill them
+  const missingIndices = chainAttestations
+    .map((a, i) => (!existingIdSet.has(a[0]) ? i : -1))
+    .filter((i) => i !== -1);
 
-  // Check for missing attestations - this shouldn't happen since attestations are processed before revocations
-  const missingAttestations = chainAttestations.filter(
-    (a) => !existingIdSet.has(a[0])
-  );
-  if (missingAttestations.length > 0) {
-    const missingIds = missingAttestations.map((a) => a[0]).join(", ");
-    throw new Error(
-      `${missingAttestations.length} attestations not found in DB for revocation: ${missingIds}. This indicates a bug in the indexer.`
+  if (missingIndices.length > 0) {
+    console.log(
+      `Backfilling ${missingIndices.length} missing attestations before revocation`
     );
+    const backfillAttestations = await Promise.all(
+      missingIndices.map((i) =>
+        createAttestationFromChainData(
+          chainAttestations[i],
+          logs[i].transactionHash
+        )
+      )
+    );
+    await prisma.attestation.createMany({
+      data: backfillAttestations,
+      skipDuplicates: true,
+    });
   }
 
-  if (validRevocations.length === 0) {
+  if (chainAttestations.length === 0) {
     return;
   }
 
-  console.log(`Processing ${validRevocations.length} revocations`);
+  console.log(`Processing ${chainAttestations.length} revocations`);
 
   // Batch update all attestations using transaction
   const updatedAttestations = await prisma.$transaction(
-    validRevocations.map((attestation) =>
+    chainAttestations.map((attestation) =>
       prisma.attestation.update({
         where: { id: attestation[0] },
         data: {
